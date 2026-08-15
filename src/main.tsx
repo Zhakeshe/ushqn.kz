@@ -7,6 +7,7 @@ import posthog from 'posthog-js'
 import App from './App.tsx'
 import { ConfirmProvider } from './lib/confirm.tsx'
 import { ToastProvider } from './lib/toast.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import './i18n/index.ts'
 import './index.css'
 
@@ -56,14 +57,16 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <ConfirmProvider>
-            <App />
-          </ConfirmProvider>
-        </ToastProvider>
-      </QueryClientProvider>
-    </HelmetProvider>
+    <ErrorBoundary>
+      <HelmetProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <ConfirmProvider>
+              <App />
+            </ConfirmProvider>
+          </ToastProvider>
+        </QueryClientProvider>
+      </HelmetProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

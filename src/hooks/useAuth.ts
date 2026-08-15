@@ -9,12 +9,21 @@ export function useAuth() {
   useEffect(() => {
     let cancelled = false
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled) {
-        setSession(data.session ?? null)
-        setLoading(false)
-      }
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!cancelled) {
+          setSession(data?.session ?? null)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.warn('Supabase getSession error:', err)
+        if (!cancelled) {
+          setSession(null)
+          setLoading(false)
+        }
+      })
 
     const {
       data: { subscription },
