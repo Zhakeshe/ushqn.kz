@@ -1,0 +1,6 @@
+{
+  "name": "USHQN",
+  "description": "Talent growth platform featuring achievements, ratings, job opportunities, communities, real-time messaging, and showcase portfolios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
