@@ -22,6 +22,8 @@ import {
   Users,
   Settings,
   ShieldCheck,
+  Building2,
+  Compass,
   Link as LinkIcon
 } from 'lucide-react'
 
@@ -105,7 +107,7 @@ export function Navbar() {
   const { userId } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [moreOpen, setMoreOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
 
@@ -132,8 +134,16 @@ export function Navbar() {
     },
   })
 
+  const isKz = i18n.language === 'kk'
+  const isRu = i18n.language === 'ru'
+
   const moreItems = useMemo(() => {
     const base = [
+      { to: '/roadmap', label: isKz ? '1. AI Roadmap' : isRu ? '1. AI Профориентация' : '1. AI Roadmap', icon: Compass },
+      { to: '/passport', label: isKz ? '2. QR Паспорт' : isRu ? '2. QR Паспорт' : '2. QR Passport', icon: ShieldCheck },
+      { to: '/gamification', label: isKz ? '3. RPG & Квесттер' : isRu ? '3. RPG & Квесты' : '3. RPG Quests', icon: Trophy },
+      { to: '/grants', label: isKz ? '4. ЖОО Гранттары' : isRu ? '4. Гранты Вузов' : '4. University Grants', icon: Building2 },
+      { to: '/parent-analytics', label: isKz ? '5. Ата-ана Аналитикасы' : isRu ? '5. Отчет Родителям' : '5. Parent Report', icon: Users },
       { to: '/achievements', label: t('nav.achievements'), icon: Trophy },
       { to: '/rating', label: t('nav.rating'), icon: Users },
       { to: '/people', label: t('nav.people'), icon: Users },
@@ -142,7 +152,7 @@ export function Navbar() {
     base.push({ to: '/communities', label: t('nav.communities'), icon: Layers }, { to: '/settings', label: t('nav.settings'), icon: Settings })
     if (staff?.isAdmin || staff?.isModerator) base.push({ to: '/admin', label: t('nav.admin'), icon: ShieldCheck })
     return base
-  }, [t, staff])
+  }, [t, staff, isKz, isRu])
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false) }

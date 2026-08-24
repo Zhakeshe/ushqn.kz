@@ -99,7 +99,7 @@ export function AppLayout() {
       <Sidebar />
 
       {/* Main area — offset for fixed desktop sidebar */}
-      <div className="flex min-w-0 flex-1 flex-col lg:ml-[220px]">
+      <div className="flex min-w-0 flex-1 flex-col lg:ml-56">
         <a href="#main-content" className="ushqn-skip-link">{t('ui.skipToContent')}</a>
         <PrivacyBanner />
         <OfflineBanner />

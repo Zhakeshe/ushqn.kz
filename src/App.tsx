@@ -17,6 +17,11 @@ import { RegisterPage } from './pages/RegisterPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { OnboardingFlowPage } from './pages/OnboardingFlowPage'
 import { ConnectionsPage } from './pages/ConnectionsPage'
+import { RoadmapPage } from './pages/RoadmapPage'
+import { PassportPage } from './pages/PassportPage'
+import { GamificationPage } from './pages/GamificationPage'
+import { GrantsPage } from './pages/GrantsPage'
+import { ParentAnalyticsPage } from './pages/ParentAnalyticsPage'
 import { AdminRoute } from './routes/AdminRoute'
 import { ProtectedRoute } from './routes/ProtectedRoute'
 import { trackEvent } from './lib/analytics'
@@ -60,6 +65,11 @@ export default function App() {
           <Route path="/onboarding" element={<OnboardingFlowPage />} />
           <Route element={<AppLayout />}>
             <Route path="/home" element={<HomePage />} />
+            <Route path="/roadmap" element={<RoadmapPage />} />
+            <Route path="/passport" element={<PassportPage />} />
+            <Route path="/gamification" element={<GamificationPage />} />
+            <Route path="/grants" element={<GrantsPage />} />
+            <Route path="/parent-analytics" element={<ParentAnalyticsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/rating" element={<RatingPage />} />
             <Route path="/achievements" element={<AchievementsPage />} />

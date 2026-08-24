@@ -36,19 +36,19 @@ const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.05,
+      staggerChildren: 0.06,
+      delayChildren: 0.04,
     },
   },
 }
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.5,
+      duration: 0.4,
       ease: [0.22, 1, 0.36, 1],
     },
   },
@@ -66,7 +66,7 @@ function StatCounter({ n, suffix, label }: { n: number; suffix: string; label: s
   useEffect(() => {
     let start = 0
     const end = n
-    const duration = 1200
+    const duration = 1000
     const stepTime = 16
     const totalSteps = duration / stepTime
     const increment = Math.ceil(end / totalSteps)
@@ -85,11 +85,11 @@ function StatCounter({ n, suffix, label }: { n: number; suffix: string; label: s
 
   return (
     <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
-      <div className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+      <div className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
         {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
-        <span className="text-indigo-600 dark:text-indigo-400">{suffix}</span>
+        <span className="text-blue-600 dark:text-blue-400">{suffix}</span>
       </div>
-      <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <div className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:text-xs">
         {label}
       </div>
     </div>
@@ -101,13 +101,16 @@ export function LandingPage() {
   const { session, loading: authLoading } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [langMenuOpen, setLangMenuOpen] = useState(false)
-  const [selectedTrajectory, setSelectedTrajectory] = useState<'it' | 'robotics' | 'med' | 'business'>('robotics')
+  const [selectedTrajectory, setSelectedTrajectory] = useState<'robotics' | 'it' | 'med' | 'business'>('robotics')
   const [searchQuery, setSearchQuery] = useState('')
   const [aiAssistantModal, setAiAssistantModal] = useState(false)
   const [aiResponseText, setAiResponseText] = useState('')
   const [isAiGenerating, setIsAiGenerating] = useState(false)
   const [isDark, setIsDark] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
+
+  const isKz = i18n.language === 'kk'
+  const isEn = i18n.language === 'en'
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -126,22 +129,32 @@ export function LandingPage() {
   function handleAiSearchSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault()
     if (!searchQuery.trim()) {
-      setSearchQuery(i18n.language === 'kk' ? 'Робототехника және IT бойынша 1 жылдық Roadmap' : 'Робототехника и IT роадмап на грант')
+      setSearchQuery(
+        isKz
+          ? 'Робототехника және IT бойынша грантқа жету жоспары'
+          : isEn
+          ? 'Robotics and IT grant preparation roadmap'
+          : 'План поступления на грант по робототехнике и IT'
+      )
     }
     setAiAssistantModal(true)
     setIsAiGenerating(true)
     setTimeout(() => {
       setIsAiGenerating(false)
-      if (i18n.language === 'kk') {
+      if (isKz) {
         setAiResponseText(
-          '✨ USHQN AI Карьералық Ментор ұсынысы:\n\n1. Бағыт: «Robotics & Mechatronics Engineering (Академиялық грант)»\n2. Ұсынылатын қадамдар:\n   • C++ және Arduino базасын растау (+450 XP)\n   • NIS/Daryn облыстық олимпиадасына қатысу\n   • Astana IT University & Nazarbayev University direct grant квотасын алу\n\n🎯 Толық картаны өз профиліңізде сақтау үшін платформаға өтіңіз.'
+          '✨ USHQN AI Карьералық Ментор ұсынысы:\n\n1. Бағыт: «Робототехника және Инженерия (Академиялық грант)»\n2. Ұсынылатын қадамдар:\n   • C++ және Arduino базалық жобаларын растау (+450 XP)\n   • NIS / Daryn облыстық олимпиадаларына қатысу\n   • WRO немесе KazRobotics жарыстарына жоба дайындау\n   • Расталған цифрлық портфолио арқылы Astana IT University & Nazarbayev University гранттарына тапсыру\n\n🎯 Өз профиліңізде жеке оқу картасын бекіту үшін платформаға тіркеліңіз.'
+        )
+      } else if (isEn) {
+        setAiResponseText(
+          '✨ USHQN AI Career Mentor Recommendation:\n\n1. Direction: "Robotics & Mechatronics Engineering (Academic Grant)"\n2. Recommended Steps:\n   • Verify foundational C++ & Arduino projects (+450 XP)\n   • Participate in regional STEM / Robotics Olympiads\n   • Prepare tournament showcase for WRO competitions\n   • Submit verified digital portfolio for direct university grant offers\n\n🎯 Register on the platform to save your personal roadmap.'
         )
       } else {
         setAiResponseText(
-          '✨ Рекомендация USHQN AI Карьерного Ментора:\n\n1. Направление: «Robotics & Mechatronics Engineering (Грант)»\n2. Ключевые шаги:\n   • Верификация навыков C++ и схемотехники (+450 XP)\n   • Участие в олимпиаде Daryn/WRO\n   • Получение прямого гранта от Astana IT University / NU\n\n🎯 Перейдите в профиль, чтобы закрепить персональный план.'
+          '✨ Рекомендация USHQN AI Карьерного Ментора:\n\n1. Направление: «Робототехника и Инженерия (Академический грант)»\n2. Ключевые шаги:\n   • Верификация базовых проектов на C++ и Arduino (+450 XP)\n   • Участие в областных олимпиадах Daryn / NIS\n   • Подготовка проекта к чемпионатам WRO и KazRobotics\n   • Подача подтвержденного цифрового портфолио на гранты в Astana IT University и NU\n\n🎯 Зарегистрируйтесь на платформе, чтобы сохранить свой персональный роадмап.'
         )
       }
-    }, 600)
+    }, 500)
   }
 
   useEffect(() => {
@@ -149,7 +162,7 @@ export function LandingPage() {
   }, [])
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20)
+    const handleScroll = () => setScrolled(window.scrollY > 15)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -164,219 +177,315 @@ export function LandingPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://ushqn.vercel.app'
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://ushqn.kz'
   const canonicalUrl = useMemo(() => `${origin}/`, [origin])
-  const currentLang = LANGS.find((l) => l.code === i18n.language) ?? LANGS[1]
+  const currentLang = LANGS.find((l) => l.code === i18n.language) ?? LANGS[0]
 
-  // 4 Core Startup Pillars based on USHQN Business Concept
+  // 4 Core Startup Pillars
   const corePillars = [
     {
       icon: QrCode,
-      tag: 'Pillar 1 · Verification',
-      title: i18n.language === 'kk' ? 'Расталған Цифрлық Портфолио' : i18n.language === 'en' ? 'Verified Digital Portfolio' : 'Верифицированное Цифровое Портфолио',
-      desc: i18n.language === 'kk'
-        ? 'Барлық дипломдар, жобалар мен сертификаттар anti-fake тексеруден өтіп, QR-кодты ресми Цифрлық Паспортқа жиналады.'
-        : i18n.language === 'en'
-        ? 'All diplomas, projects and certificates pass anti-fake verification and consolidate into a QR-code Digital Passport.'
-        : 'Все дипломы, проекты и сертификаты проходят верификацию и формируют единый QR-паспорт таланта.',
-      badge: 'Anti-Fake & ATS Ready',
-      color: 'from-blue-600 to-indigo-600',
+      tag: isKz ? '1-бөлім · Растау' : isEn ? 'Pillar 1 · Verification' : '1 блок · Верификация',
+      title: isKz
+        ? 'Расталған Цифрлық Портфолио'
+        : isEn
+        ? 'Verified Digital Portfolio'
+        : 'Верифицированное Цифровое Портфолио',
+      desc: isKz
+        ? 'Қағаз грамоталар мен сертификаттар жоғалмайды. Барлық жетістіктер тексеруден өтіп, жеке QR-паспортқа жиналады.'
+        : isEn
+        ? 'Diplomas and certificates will never be lost. All achievements are verified and gathered in a single QR-code passport.'
+        : 'Бумажные грамоты не потеряются. Все дипломы и проекты проходят проверку и формируют единый QR-паспорт таланта.',
+      badge: 'QR Digital ID',
     },
     {
       icon: Bot,
-      tag: 'Pillar 2 · AI Mentor',
-      title: i18n.language === 'kk' ? 'AI-Driven Карьералық Ментор' : i18n.language === 'en' ? 'AI-Driven Career Mentor' : 'AI-Карьерный Ментор и Роадмап',
-      desc: i18n.language === 'kk'
-        ? 'ЖИ-модель дағдыларды (88% Mechatronics/IT) талдап, ЖОО грантына жетудің қадамдық жеке Roadmap-ін (IELTS, SAT, хакатондар) сызады.'
-        : i18n.language === 'en'
-        ? 'AI analyzes skill profiles and creates personalized step-by-step roadmaps toward university grants and career trajectories.'
-        : 'ИИ диагностирует навыки и строит персональный пошаговый роадмап поступления на грант (IELTS, ҰБТ, хакатоны).',
-      badge: 'Smart Direction Engine',
-      color: 'from-indigo-600 to-violet-600',
+      tag: isKz ? '2-бөлім · AI Ментор' : isEn ? 'Pillar 2 · AI Mentor' : '2 блок · AI Ментор',
+      title: isKz
+        ? 'AI Карьералық Навигатор'
+        : isEn
+        ? 'AI Career Navigator'
+        : 'AI Карьерный Навигатор',
+      desc: isKz
+        ? 'Жасанды интеллект қызығушылықтарыңызды талдап, ЖОО гранттары мен олимпиадаларға жетудің қадамдық жоспарын (Roadmap) құрады.'
+        : isEn
+        ? 'AI analyzes your skills and builds a tailored step-by-step roadmap toward university grants and competitions.'
+        : 'Искусственный интеллект анализирует сильные стороны и строит пошаговый план поступления на грант (IELTS, ҰБТ, хакатоны).',
+      badge: 'Smart Roadmap',
     },
     {
       icon: Trophy,
-      tag: 'Pillar 3 · Gamification',
-      title: i18n.language === 'kk' ? 'RPG Геймификация & XP' : i18n.language === 'en' ? 'RPG Gamification & XP' : 'RPG-Геймификация и XP Рейтинг',
-      desc: i18n.language === 'kk'
-        ? 'Білім алу мен өсу ойынға айналады: Level 1-ден Level 50-ге дейін өсіп, мектеп, қала және республикалық көшбасшылар тақтасында жарысыңыз.'
-        : i18n.language === 'en'
-        ? 'Learning turns into an RPG journey: advance from Level 1 to 50 and compete on school, city, and national leaderboards.'
-        : 'Развитие как игра: прокачивайте уровень от Level 1 до 50, выполняйте квесты и поднимайтесь в республиканском рейтинге.',
-      badge: 'Levels 1–50 & Quests',
-      color: 'from-amber-500 to-orange-600',
+      tag: isKz ? '3-бөлім · Геймификация' : isEn ? 'Pillar 3 · Gamification' : '3 блок · Геймификация',
+      title: isKz
+        ? 'XP Ұпайлары және Рейтинг'
+        : isEn
+        ? 'XP Points & Leaderboard'
+        : 'XP Баллы и Рейтинг',
+      desc: isKz
+        ? 'Даму үдерісі ойынға айналады: әрбір расталған жетістік үшін ұпай жинап, мектеп және ел бойынша рейтингте көтеріліңіз.'
+        : isEn
+        ? 'Growth turns into an engaging journey: earn XP for verified achievements and level up on school and national leaderboards.'
+        : 'Развитие как игра: прокачивайте свой уровень, выполняйте цели и поднимайтесь в республиканском рейтинге школьников.',
+      badge: 'Level 1–50',
     },
     {
       icon: Building2,
-      tag: 'Pillar 4 · B2B & Grants',
-      title: i18n.language === 'kk' ? 'ЖОО мен Демеушілер Биржасы' : i18n.language === 'en' ? 'Universities & Grant Marketplace' : 'Биржа Университетов и Грантов',
-      desc: i18n.language === 'kk'
-        ? 'Университеттер мен қорлар тестілеу нәтижесін күтпей-ақ, талантты практиктерге тікелей ішкі гранттар (Direct Offer) ұсынады.'
-        : i18n.language === 'en'
-        ? 'Universities and scholarship funds scout verified talent and send Direct Grant Offers before standard graduation exams.'
-        : 'Вузы и грантовые фонды находят таланты по фильтрам навыков и отправляют прямые офферы на гранты и стипендии.',
-      badge: 'Direct Grant Offers',
-      color: 'from-emerald-600 to-teal-600',
+      tag: isKz ? '4-бөлім · Гранттар' : isEn ? 'Pillar 4 · Opportunities' : '4 блок · Гранты',
+      title: isKz
+        ? 'ЖОО мен Қорлар Биржасы'
+        : isEn
+        ? 'Universities & Scholarships'
+        : 'Биржа Вузов и Грантов',
+      desc: isKz
+        ? 'Университеттер мен демеушілер дарынды оқушыларды алдын-ала көріп, тікелей ішкі гранттар мен стипендиялар ұсынады.'
+        : isEn
+        ? 'Universities and sponsors scout verified talent and offer direct grants and scholarship opportunities.'
+        : 'Ведущие вузы и фонды видят сильных кандидатов заранее и отправляют прямые офферы на гранты и стажировки.',
+      badge: 'Direct Offers',
     },
   ]
 
-  // Value proposition by persona (B2C, B2B, B2G)
+  // Value by Persona
   const personas = [
     {
-      role: i18n.language === 'kk' ? 'Оқушыларға (7–11 сынып)' : i18n.language === 'en' ? 'Students (Grades 7–11)' : 'Школьникам (7–11 классы)',
+      role: isKz ? 'Оқушыларға (7–11 сынып)' : isEn ? 'Students (Grades 7–11)' : 'Школьникам (7–11 классы)',
       icon: GraduationCap,
-      color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:bg-indigo-950/40 dark:text-indigo-400',
-      bullets: [
-        i18n.language === 'kk' ? '11 жылдық еңбек пен жобалар 1 QR-паспортта' : 'Все дипломы и проекты в одном QR-паспорте',
-        i18n.language === 'kk' ? 'ЖИ-бағыттау және грантқа қадамдық Roadmap' : 'Персональный AI-роадмап для грантов и олимпиад',
-        i18n.language === 'kk' ? 'XP жинау, RPG деңгейлер және ұлттық рейтинг' : 'RPG-уровни (1-50 Lvl), миссии и республиканский рейтинг',
-      ],
-    },
-    {
-      role: i18n.language === 'kk' ? 'Ата-аналарға' : i18n.language === 'en' ? 'Parents' : 'Родителям',
-      icon: HeartHandshake,
       color: 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-950/40 dark:text-blue-400',
       bullets: [
-        i18n.language === 'kk' ? 'Баланың нақты дағдысы мен бейіміне сенімділік' : 'Четкое понимание способностей и интересов ребенка',
-        i18n.language === 'kk' ? 'Бос курстар мен репетиторларға ақша шығындамау' : 'Экономия на неэффективных курсах за счет точной аналитики',
-        i18n.language === 'kk' ? 'Академиялық және карьералық өсуді тікелей бақылау' : 'Прозрачный трекинг прогресса и подготовки к ЖОО/вузам',
+        isKz ? 'Барлық дипломдар 1 ресми QR-паспортта' : isEn ? 'All diplomas in 1 verified QR passport' : 'Все дипломы и проекты в одном QR-паспорте',
+        isKz ? 'AI көмегімен грантқа қадамдық Roadmap' : isEn ? 'AI-powered step-by-step roadmap to grants' : 'Персональный AI-роадмап для грантов и олимпиад',
+        isKz ? 'XP ұпайлары және ашық рейтинг' : isEn ? 'XP points and transparent leaderboard' : 'XP-рейтинг, уровни и республиканский топ',
       ],
     },
     {
-      role: i18n.language === 'kk' ? 'ЖОО және Мектептерге (B2B)' : i18n.language === 'en' ? 'Universities & Schools (B2B)' : 'Вузам и Школам (B2B)',
+      role: isKz ? 'Ата-аналарға' : isEn ? 'Parents' : 'Родителям',
+      icon: HeartHandshake,
+      color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:bg-indigo-950/40 dark:text-indigo-400',
+      bullets: [
+        isKz ? 'Баланың нақты қабілеті мен бейімін көру' : isEn ? 'Clear view of child talents and interests' : 'Четкое понимание способностей ребенка',
+        isKz ? 'Қажетті үйірмелерді таңдап, артық шығынды азайту' : isEn ? 'Focus on effective courses without extra costs' : 'Точный фокус на нужных предметах и секциях',
+        isKz ? 'ЖОО-ға түсу дайындығын ашық бақылау' : isEn ? 'Transparent tracking of university readiness' : 'Прозрачный контроль подготовки к поступлению',
+      ],
+    },
+    {
+      role: isKz ? 'Мектептер мен Ұстаздарға' : isEn ? 'Schools & Mentors' : 'Школам и Педагогам',
       icon: Building2,
       color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-950/40 dark:text-emerald-400',
       bullets: [
-        i18n.language === 'kk' ? 'Дарынды практик оқушыларды алдын-ала тарту' : 'Рекрутинг сильных абитуриентов до сдачи ЕНТ/экзаменов',
-        i18n.language === 'kk' ? 'Тікелей гранттар мен стипендия ұсыну (Direct Offer)' : 'Прямая выдача образовательных грантов и стажировок',
-        i18n.language === 'kk' ? 'Мектептік желілерге арналған бірыңғай дашборд' : 'Школьный дашборд аналитики успеваемости и талантов',
+        isKz ? 'Оқушылар жетістіктерінің бірыңғай цифрлық базасы' : isEn ? 'Single digital hub for student accomplishments' : 'Единая база портфолио и побед учеников',
+        isKz ? 'Мектептің олимпиадалық және ғылыми көрсеткіші' : isEn ? 'Analytics on olympiad and science projects' : 'Аналитика олимпиадных и научных проектов',
+        isKz ? 'Дарынды балаларды ерте анықтап, бағыттау' : isEn ? 'Early talent identification and guidance' : 'Быстрое выявление и развитие талантов',
       ],
     },
     {
-      role: i18n.language === 'kk' ? 'Қорлар мен Мемлекетке (B2G)' : i18n.language === 'en' ? 'Funds & Sponsors (B2G)' : 'Фондам и Государству (B2G)',
+      role: isKz ? 'ЖОО және Қорларға' : isEn ? 'Universities & Funds' : 'Вузам и Фондам',
       icon: Sparkles,
       color: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-950/40 dark:text-amber-400',
       bullets: [
-        i18n.language === 'kk' ? 'Өңірлік таланттар мен STEM дағдылар Big Data-сы' : 'Big Data аналитика кадрового потенциала регионов',
-        i18n.language === 'kk' ? 'Ашық және әділ корпоративтік гранттар операторы' : 'Прозрачный оператор корпоративных грантов и стипендий',
-        i18n.language === 'kk' ? 'Елдегі адами капитал сапасын ерте жастан арттыру' : 'Системное развитие человеческого капитала со школы',
+        isKz ? 'Ең үздік оқушыларды алдын-ала тарту' : isEn ? 'Early recruitment of top verified talents' : 'Рекрутинг сильных абитуриентов заранее',
+        isKz ? 'Тікелей гранттар мен стипендиялар ұсыну' : isEn ? 'Direct grants and scholarship offerings' : 'Прямая выдача образовательных грантов',
+        isKz ? 'Ашық және әділ таланттар мониторингі' : isEn ? 'Transparent talent analytics and scouting' : 'Прозрачный отбор мотивированных студентов',
       ],
     },
   ]
 
   const trajectoryData = {
     robotics: {
-      title: i18n.language === 'kk' ? 'Робототехника және Mechatronics' : 'Робототехника и Mechatronics',
-      score: '94% Match',
+      title: isKz ? 'Робототехника және Инженерия' : isEn ? 'Robotics & Engineering' : 'Робототехника и Инженерия',
+      score: isKz ? '94% Сәйкестік' : isEn ? '94% Match' : '94% Совпадение',
       steps: [
-        { grade: '8-9 сынып', task: 'C++, Arduino & облыстық робототехника жарысы (+450 XP)' },
-        { grade: '10 сынып', task: 'IELTS 6.5+ дайындық және халықаралық WRO хакатоны (+800 XP)' },
-        { grade: '11 сынып', task: 'Расталған портфолиомен шетелдік және жергілікті ЖОО грантына Direct Offer' },
+        {
+          grade: isKz ? '8–9 сынып' : isEn ? 'Grades 8–9' : '8–9 классы',
+          task: isKz
+            ? 'C++, Arduino базасы және облыстық жарыстар (+450 XP)'
+            : isEn
+            ? 'C++, Arduino basics & regional tournaments (+450 XP)'
+            : 'C++, Arduino и участие в областных соревнованиях (+450 XP)',
+        },
+        {
+          grade: isKz ? '10 сынып' : isEn ? 'Grade 10' : '10 класс',
+          task: isKz
+            ? 'Халықаралық WRO хакатоны және IELTS дайындығы (+800 XP)'
+            : isEn
+            ? 'WRO tournament showcase and IELTS prep (+800 XP)'
+            : 'Международный турнир WRO и подготовка к IELTS (+800 XP)',
+        },
+        {
+          grade: isKz ? '11 сынып' : isEn ? 'Grade 11' : '11 класс',
+          task: isKz
+            ? 'Расталған портфолиомен жетекші ЖОО грантына тікелей ұсыныс алу'
+            : isEn
+            ? 'Direct university grant offers via verified digital portfolio'
+            : 'Прямые офферы на гранты от топ-вузов по цифровому портфолио',
+        },
       ],
     },
     it: {
-      title: i18n.language === 'kk' ? 'Бағдарламалау & AI Engineering' : 'IT & AI Engineering',
-      score: '91% Match',
+      title: isKz ? 'Бағдарламалау & AI Engineering' : isEn ? 'Software & AI Engineering' : 'IT и AI Разработка',
+      score: isKz ? '92% Сәйкестік' : isEn ? '92% Match' : '92% Совпадение',
       steps: [
-        { grade: '8-9 сынып', task: 'Python, веб-әзірлеу және GitHub-қа 2 дербес жоба жүктеу (+400 XP)' },
-        { grade: '10 сынып', task: 'Республикалық олимпиада, алгоритмдер және IT стажировка (+900 XP)' },
-        { grade: '11 сынып', task: 'ТОП IT-университеттер мен Astana Hub серіктестерінен грант' },
+        {
+          grade: isKz ? '8–9 сынып' : isEn ? 'Grades 8–9' : '8–9 классы',
+          task: isKz
+            ? 'Python, веб-негіздері және GitHub-қа 2 дербес жоба (+400 XP)'
+            : isEn
+            ? 'Python, web basics & 2 GitHub showcase projects (+400 XP)'
+            : 'Python, веб-разработка и 2 проекта на GitHub (+400 XP)',
+        },
+        {
+          grade: isKz ? '10 сынып' : isEn ? 'Grade 10' : '10 класс',
+          task: isKz
+            ? 'Республикалық олимпиадалар, алгоритмдер және IT стажировка (+900 XP)'
+            : isEn
+            ? 'National Olympiads, algorithms and junior internship (+900 XP)'
+            : 'Республиканские олимпиады, алгоритмы и стажировки (+900 XP)',
+        },
+        {
+          grade: isKz ? '11 сынып' : isEn ? 'Grade 11' : '11 класс',
+          task: isKz
+            ? 'ТОП IT-университеттер мен Astana Hub серіктестерінен грант'
+            : isEn
+            ? 'Grants from top IT universities and tech partners'
+            : 'Гранты от ведущих IT-вузов и партнеров экосистемы',
+        },
       ],
     },
     med: {
-      title: i18n.language === 'kk' ? 'Биомедицина & BioTech' : 'Биомедицина и Биотехнологии',
-      score: '88% Match',
+      title: isKz ? 'Биомедицина & Биотехнология' : isEn ? 'Biomedicine & Biotech' : 'Биомедицина и Биотехнологии',
+      score: isKz ? '89% Сәйкестік' : isEn ? '89% Match' : '89% Совпадение',
       steps: [
-        { grade: '8-9 сынып', task: 'Биология-химия олимпиадалары және ғылыми зерттеу жобасы (+500 XP)' },
-        { grade: '10 сынып', task: 'Ғылыми жетекшімен мақала дайындау және SAT Subject / ҰБТ (+750 XP)' },
-        { grade: '11 сынып', task: 'Медициналық университеттерден атаулы грант және зертханалық практика' },
+        {
+          grade: isKz ? '8–9 сынып' : isEn ? 'Grades 8–9' : '8–9 классы',
+          task: isKz
+            ? 'Биология-химия олимпиадалары және ғылыми жоба (+500 XP)'
+            : isEn
+            ? 'Biology & chemistry competitions and science project (+500 XP)'
+            : 'Олимпиады по биологии и химии, школьный научный проект (+500 XP)',
+        },
+        {
+          grade: isKz ? '10 сынып' : isEn ? 'Grade 10' : '10 класс',
+          task: isKz
+            ? 'Ғылыми мақала, SAT Subject / ҰБТ тереңдетілген дайындық (+750 XP)'
+            : isEn
+            ? 'Research publication prep and targeted subject tests (+750 XP)'
+            : 'Публикация статьи и профильная подготовка к тестам (+750 XP)',
+        },
+        {
+          grade: isKz ? '11 сынып' : isEn ? 'Grade 11' : '11 класс',
+          task: isKz
+            ? 'Медициналық ЖОО-лардан атаулы грант және зертханалық практика'
+            : isEn
+            ? 'University medical grants and lab practice admissions'
+            : 'Именные гранты от медицинских университетов и лабораторий',
+        },
       ],
     },
     business: {
-      title: i18n.language === 'kk' ? 'FinTech & Кәсіпкерлік' : 'Экономика, FinTech и Бизнес',
-      score: '86% Match',
+      title: isKz ? 'FinTech & Кәсіпкерлік' : isEn ? 'FinTech & Business' : 'FinTech и Предпринимательство',
+      score: isKz ? '87% Сәйкестік' : isEn ? '87% Match' : '87% Совпадение',
       steps: [
-        { grade: '8-9 сынып', task: 'Дебат турнирлері, көшбасшылық жобалар және кейс-чемпионаттар (+350 XP)' },
-        { grade: '10 сынып', task: 'Startup MVP жасап, мектеп инкубаторынан алғашқы инвестиция тарту (+850 XP)' },
-        { grade: '11 сынып', task: 'Бизнес-мектептерге портфолио арқылы толық грант ұсынысы' },
+        {
+          grade: isKz ? '8–9 сынып' : isEn ? 'Grades 8–9' : '8–9 классы',
+          task: isKz
+            ? 'Дебат турнирлері, көшбасшылық және кейс-чемпионаттар (+350 XP)'
+            : isEn
+            ? 'Debates, leadership initiatives and case championships (+350 XP)'
+            : 'Дебаты, лидерские проекты и кейс-чемпионаты (+350 XP)',
+        },
+        {
+          grade: isKz ? '10 сынып' : isEn ? 'Grade 10' : '10 класс',
+          task: isKz
+            ? 'Стартап MVP жасау және мектеп инкубаторында қорғау (+850 XP)'
+            : isEn
+            ? 'Startup MVP launch and incubator showcase (+850 XP)'
+            : 'Создание MVP стартапа и защита в инкубаторе (+850 XP)',
+        },
+        {
+          grade: isKz ? '11 сынып' : isEn ? 'Grade 11' : '11 класс',
+          task: isKz
+            ? 'Бизнес-мектептерге портфолио арқылы толық грант ұсынысы'
+            : isEn
+            ? 'Full scholarships to business schools via portfolio merit'
+            : 'Полные гранты в бизнес-школы на основе портфолио проектов',
+        },
       ],
     },
   }
 
   const NAV_LINKS = [
-    { href: '#pillars', label: i18n.language === 'kk' ? 'Экожүйе' : i18n.language === 'en' ? 'Pillars' : 'Экосистема' },
-    { href: '#roadmap-demo', label: i18n.language === 'kk' ? 'AI Ментор' : i18n.language === 'en' ? 'AI Mentor' : 'AI Ментор' },
-    { href: '#personas', label: i18n.language === 'kk' ? 'Кімге арналған' : i18n.language === 'en' ? 'For Whom' : 'Для кого' },
-    { href: '#how', label: t('landing.navHow', 'Как начать') },
-    { href: '#stories', label: t('landing.navVoices', 'Отзывы') },
+    { href: '#pillars', label: isKz ? 'Экожүйе' : isEn ? 'Pillars' : 'Экосистема' },
+    { href: '#roadmap-demo', label: isKz ? 'AI Ментор' : isEn ? 'AI Mentor' : 'AI Ментор' },
+    { href: '#personas', label: isKz ? 'Кімге арналған' : isEn ? 'For Whom' : 'Для кого' },
+    { href: '#how', label: isKz ? 'Қалай бастау' : isEn ? 'How It Works' : 'Как начать' },
+    { href: '#stories', label: isKz ? 'Пікірлер' : isEn ? 'Reviews' : 'Отзывы' },
   ]
 
   const CTA_CHECKS = [
-    i18n.language === 'kk' ? 'Анти-фейк тексеру және QR Цифрлық Паспорт' : 'Верификация дипломов и QR-паспорт таланта',
-    i18n.language === 'kk' ? 'AI Ментор және жекелендірілген грант картасы' : 'AI-ментор и персональный роадмап к гранту',
-    i18n.language === 'kk' ? 'RPG деңгейлер (Level 1–50) және XP рейтинг' : 'RPG-геймификация, XP и открытый рейтинг',
-    i18n.language === 'kk' ? 'ЖОО мен қорлардан тікелей грант ұсыныстары' : 'Прямые офферы на гранты от топ-вузов и фондов',
+    isKz ? 'Тексерілген QR Цифрлық Паспорт' : isEn ? 'Verified QR Digital Passport' : 'Верифицированный QR-паспорт',
+    isKz ? 'AI Ментор және қадамдық грант жоспары' : isEn ? 'AI Mentor and step-by-step grant plan' : 'AI-ментор и план поступления на грант',
+    isKz ? 'XP ұпайлары және республикалық рейтинг' : isEn ? 'XP points and nationwide leaderboard' : 'XP-геймификация и открытый рейтинг',
+    isKz ? 'Жетекші ЖОО мен қорлардан тікелей ұсыныстар' : isEn ? 'Direct grant offers from top universities' : 'Прямые офферы на гранты от топ-вузов',
   ]
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500/20 selection:text-indigo-900 dark:bg-slate-950 dark:text-slate-100 dark:selection:bg-indigo-500/30 dark:selection:text-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 antialiased selection:bg-blue-500/20 selection:text-blue-900 dark:bg-slate-950 dark:text-slate-100 dark:selection:bg-blue-500/30 dark:selection:text-white">
       <Helmet>
-        <title>USHQN (ҰШҚЫН) — EdTech & AI Talent Ecosystem · Цифрлық Паспорт & Карьералық Ментор</title>
+        <title>USHQN (ҰШҚЫН) — Оқушылардың Цифрлық Портфолиосы және Даму Экожүйесі</title>
         <meta
           name="description"
-          content="USHQN — мектеп оқушылары мен жастарға арналған EdTech экожүйесі: расталған цифрлық портфолио, AI-ментор, RPG геймификация және ЖОО гранттары."
+          content="USHQN — 7-11 сынып оқушыларына арналған цифрлық портфолио, AI-ментор және ЖОО гранттарына жол ашатын платформа."
         />
         <link rel="canonical" href={canonicalUrl} />
       </Helmet>
 
       {/* Top Navbar */}
-      <nav
+      <header
         id="landing-navbar"
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-200 ${
           scrolled
-            ? 'border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95'
-            : 'border-b border-transparent bg-white/80 backdrop-blur-sm dark:bg-slate-950/80'
+            ? 'border-b border-slate-200/80 bg-white/95 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95'
+            : 'border-b border-transparent bg-white/85 backdrop-blur-sm dark:bg-slate-950/85'
         }`}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#162a45] text-white shadow-xs transition-transform group-hover:scale-105">
-              <Zap className="h-4 w-4 fill-white" />
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3.5">
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center gap-2 group shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white shadow-xs transition-transform group-hover:scale-105 dark:bg-white dark:text-slate-900 sm:h-9 sm:w-9">
+              <Zap className="h-4 w-4 fill-current" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
+              <span className="text-base font-black tracking-tight text-slate-900 dark:text-white leading-none sm:text-lg">
                 USHQN
               </span>
-              <span className="text-[10px] font-bold text-[#0052cc] dark:text-blue-400 tracking-wider">
+              <span className="text-[9px] font-bold tracking-wider text-blue-600 dark:text-blue-400 sm:text-[10px]">
                 ҰШҚЫН EDTECH
               </span>
             </div>
           </Link>
 
-          {/* Desktop Nav Anchors */}
-          <div className="hidden items-center gap-7 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 lg:flex">
+          {/* Desktop Nav Links */}
+          <div className="hidden items-center gap-6 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 lg:flex">
             {NAV_LINKS.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="transition-colors hover:text-[#162a45] dark:hover:text-blue-400"
+                className="transition hover:text-blue-600 dark:hover:text-blue-400"
               >
                 {item.label}
               </a>
             ))}
           </div>
 
-          {/* Right Actions: Theme Toggle + Language Switcher + Auth CTA */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Right Controls: Theme + Lang + Auth */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Theme Toggle Button */}
             <button
               type="button"
               onClick={toggleDark}
               aria-label="Toggle theme"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 sm:h-9 sm:w-9"
             >
-              {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
+              {isDark ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-slate-600" />}
             </button>
 
             {/* Language Switcher */}
@@ -385,116 +494,135 @@ export function LandingPage() {
                 type="button"
                 id="landing-lang-btn"
                 onClick={() => setLangMenuOpen((v) => !v)}
-                className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-xs hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 transition"
+                className="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 sm:h-9 sm:px-2.5"
               >
-                <Globe className="h-3.5 w-3.5 text-slate-500" />
+                <Globe className="h-3 w-3 text-slate-500 sm:h-3.5 sm:w-3.5" />
                 <span>{currentLang.label}</span>
                 <ChevronDown className={`h-3 w-3 transition-transform ${langMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {langMenuOpen && (
-                <div className="absolute right-0 mt-2 w-32 origin-top-right rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-800 dark:bg-slate-900 z-50">
+                <div className="absolute right-0 mt-1.5 w-32 origin-top-right rounded-xl border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-800 dark:bg-slate-900 z-50">
                   {LANGS.map((lang) => (
                     <button
                       key={lang.code}
                       type="button"
                       onClick={() => {
-                        i18n.changeLanguage(lang.code)
+                        void i18n.changeLanguage(lang.code)
                         setLangMenuOpen(false)
                       }}
-                      className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                      className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
                         i18n.language === lang.code
-                          ? 'bg-slate-100 font-bold text-[#162a45] dark:bg-slate-800 dark:text-blue-400'
-                          : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                          ? 'bg-slate-100 font-bold text-blue-600 dark:bg-slate-800 dark:text-blue-400'
+                          : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'
                       }`}
                     >
                       <span>{lang.full}</span>
-                      {i18n.language === lang.code && <CheckCircle2 className="h-3.5 w-3.5 text-[#162a45] dark:text-blue-400" />}
+                      {i18n.language === lang.code && <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Auth Buttons */}
+            {/* Auth Actions */}
             {!authLoading && session ? (
               <Link
                 to="/home"
                 id="landing-to-app-btn"
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#162a45] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[#0f1d30] active:scale-[0.98]"
+                className="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 sm:h-9 sm:px-3.5"
               >
                 <span>{t('landing.toApp', 'В приложение')}</span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3 w-3" />
               </Link>
             ) : (
-              <>
-                <Link
-                  to="/register"
-                  id="landing-register-btn"
-                  className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700"
-                >
-                  {i18n.language === 'kk' ? 'Тіркелу' : 'Регистрация'}
-                </Link>
+              <div className="flex items-center gap-1.5">
                 <Link
                   to="/login"
                   id="landing-login-btn"
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-[#162a45] px-3.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#0f1d30] active:scale-[0.98]"
+                  className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 sm:h-9 sm:px-3"
                 >
-                  {i18n.language === 'kk' ? 'Кіру' : 'Войти'}
+                  {isKz ? 'Кіру' : isEn ? 'Log in' : 'Войти'}
                 </Link>
-              </>
+                <Link
+                  to="/register"
+                  id="landing-register-btn"
+                  className="inline-flex h-8 items-center justify-center rounded-lg bg-slate-900 px-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 sm:h-9 sm:px-3"
+                >
+                  {isKz ? 'Тіркелу' : isEn ? 'Sign up' : 'Регистрация'}
+                </Link>
+              </div>
             )}
           </div>
         </div>
-      </nav>
+      </header>
 
       <main>
         {/* Hero Section */}
-        <section className="relative overflow-hidden pt-24 pb-12 sm:pt-32 sm:pb-16 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+        <section className="relative overflow-hidden pt-20 pb-10 sm:pt-28 sm:pb-16 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="grid gap-10 lg:grid-cols-12 lg:items-center"
+              className="grid gap-8 lg:grid-cols-12 lg:items-center"
             >
-              {/* Left Column */}
+              {/* Left Column Text */}
               <div className="lg:col-span-7 flex flex-col items-center text-center lg:items-start lg:text-left">
+                <motion.div
+                  variants={itemVariants}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-900 dark:bg-blue-950/60 dark:text-blue-300"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>
+                    {isKz
+                      ? 'Оқушылар мен жастардың цифрлық портфолиосы'
+                      : isEn
+                      ? 'Talent Portfolio & Career Roadmap'
+                      : 'Цифровое портфолио и карьерный роадмап'}
+                  </span>
+                </motion.div>
+
                 <motion.h1
                   variants={itemVariants}
-                  className="text-5xl font-black tracking-tight text-slate-900 dark:text-white sm:text-6xl lg:text-7xl"
+                  className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-5xl lg:text-6xl leading-[1.15]"
                 >
-                  USHQN
+                  {isKz ? (
+                    <>
+                      Жетістіктеріңді растап, <span className="text-blue-600 dark:text-blue-400">грантқа жол аш</span>
+                    </>
+                  ) : isEn ? (
+                    <>
+                      Verify achievements, <span className="text-blue-600 dark:text-blue-400">unlock your future</span>
+                    </>
+                  ) : (
+                    <>
+                      Подтверждай успехи, <span className="text-blue-600 dark:text-blue-400">поступай на грант</span>
+                    </>
+                  )}
                 </motion.h1>
-
-                <motion.p
-                  variants={itemVariants}
-                  className="mt-4 text-xl font-bold text-[#162a45] dark:text-blue-300 sm:text-2xl"
-                >
-                  {i18n.language === 'kk'
-                    ? '1 минутта Цифрлық Паспорт & AI Карьералық Roadmap құрастыр'
-                    : 'Цифровой Паспорт школьника и AI Карьерный Роадмап за 1 минуту'}
-                </motion.p>
 
                 <motion.p
                   variants={itemVariants}
                   className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-300 sm:text-base"
                 >
-                  {i18n.language === 'kk'
-                    ? '7–11 сынып оқушыларының талантын анықтап, дипломдарды растап, ТОП ЖОО-лардан тікелей грант офферлерін алуға арналған экожүйе.'
-                    : 'Экосистема для раскрытия потенциала учащихся 7–11 классов: анти-фейк портфолио, AI-ментор и прямые гранты от вузов.'}
+                  {isKz
+                    ? '7–11 сынып оқушыларына арналған цифрлық QR-паспорт: дипломдарды сақтау, AI көмегімен даму жоспарын құру және ЖОО-лардан тікелей гранттар алу.'
+                    : isEn
+                    ? 'Official digital QR passport for students: store verified diplomas, build AI-guided roadmaps, and receive direct scholarship offers.'
+                    : 'Официальный цифровой QR-паспорт для учащихся 7–11 классов: сохранение дипломов, персональный AI-роадмап и предложения грантов от ведущих вузов.'}
                 </motion.p>
 
                 {/* Hero CTAs */}
                 <motion.div
                   variants={itemVariants}
-                  className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center"
+                  className="mt-6 flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:items-center"
                 >
                   {session ? (
                     <Link
                       to="/home"
                       id="hero-primary-app-btn"
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#162a45] px-6 text-sm font-bold text-white shadow-md transition hover:bg-[#0f1d30] active:scale-[0.98]"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 text-sm font-bold text-white shadow-md transition hover:bg-slate-800 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
                     >
                       <span>{t('landing.toApp', 'В приложение')}</span>
                       <ArrowRight className="h-4 w-4" />
@@ -503,9 +631,9 @@ export function LandingPage() {
                     <Link
                       to="/register"
                       id="hero-primary-register-btn"
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#162a45] px-7 text-sm font-bold text-white shadow-md transition hover:bg-[#0f1d30] active:scale-[0.98]"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 text-sm font-bold text-white shadow-md transition hover:bg-slate-800 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
                     >
-                      <span>{i18n.language === 'kk' ? 'Бастау' : 'Начать'}</span>
+                      <span>{isKz ? 'Тегін бастау' : isEn ? 'Get Started' : 'Начать бесплатно'}</span>
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   )}
@@ -513,176 +641,171 @@ export function LandingPage() {
                   <a
                     href="#roadmap-demo"
                     id="hero-secondary-features-btn"
-                    className="inline-flex h-12 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 shadow-xs transition hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-600"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    {i18n.language === 'kk' ? 'AI Менторды көру' : 'Попробовать AI-роадмап'}
+                    {isKz ? 'AI Менторды көру' : isEn ? 'View AI Roadmap' : 'Попробовать AI-роадмап'}
                   </a>
                 </motion.div>
 
                 {/* Subtext info */}
-                <motion.p
+                <motion.div
                   variants={itemVariants}
                   className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400"
                 >
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>
-                    {i18n.language === 'kk'
-                      ? 'Anti-Fake растау · Тегін старт · Ресми QR Цифрлық Паспорт'
+                    {isKz
+                      ? 'Тексерілген сертификаттар · Тегін тіркелу · Ресми QR-паспорт'
+                      : isEn
+                      ? 'Verified Credentials · Free Registration · QR Passport'
                       : 'Верификация документов · Бесплатный старт · Официальный QR-паспорт'}
                   </span>
-                </motion.p>
+                </motion.div>
               </div>
 
-              {/* Right Column: Dashboard MiniProfile Card (Replicating exact dashboard card from screenshots) */}
-              <motion.div variants={itemVariants} className="lg:col-span-5">
-                <div className="relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                  {/* Banner */}
-                  <div className="relative h-20 bg-gradient-to-br from-[#0052cc] via-[#2066dd] to-[#64a0f0]">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_-20%,rgba(255,255,255,0.4),transparent_55%)] mix-blend-overlay" />
-                  </div>
+              {/* Right Column: Clean Interactive Profile Card */}
+              <motion.div variants={itemVariants} className="lg:col-span-5 w-full flex justify-center">
+                <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
+                  {/* Header Banner */}
+                  <div className="h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 relative" />
 
-                  {/* Avatar + name */}
-                  <div className="relative flex flex-col items-center px-4 pb-2 pt-0">
-                    <div className="-mt-10 flex h-20 w-20 items-center justify-center rounded-full border-[4px] border-white bg-[#eef1f4] text-3xl shadow-md ring-1 ring-black/[0.06] dark:border-slate-900 dark:bg-slate-800">
-                      🧑‍🎓
-                    </div>
-                    <h2 className="mt-2.5 text-center text-lg font-black text-slate-900 dark:text-white leading-tight">
-                      zhorik.
-                    </h2>
-                    <p className="mt-0.5 text-xs font-bold text-slate-500 dark:text-slate-400">
-                      {i18n.language === 'kk' ? 'Студент' : 'Студент'}
-                    </p>
-                    <p className="mt-1 text-center text-xs text-slate-400 dark:text-slate-500 line-clamp-2 px-2">
-                      Full-stack dev.
-                    </p>
-                  </div>
-
-                  {/* Stats Block */}
-                  <div className="mx-3.5 mb-3.5 overflow-hidden rounded-xl bg-[#fafbfc] ring-1 ring-slate-200/80 dark:bg-slate-800/60 dark:ring-slate-700/60">
-                    <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700">
-                      <div className="flex flex-col items-center py-3">
-                        <span className="text-2xl font-black text-[#0052cc] dark:text-blue-400">15</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                          {i18n.language === 'kk' ? 'USHQN балл' : 'USHQN баллы'}
-                        </span>
+                  {/* Profile avatar & details */}
+                  <div className="relative px-4 pb-4 pt-0">
+                    <div className="-mt-8 flex items-center justify-between">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-slate-100 text-2xl shadow-sm dark:border-slate-900 dark:bg-slate-800">
+                        🧑‍🎓
                       </div>
-                      <div className="flex flex-col items-center py-3">
-                        <span className="text-2xl font-black text-slate-900 dark:text-white">ТОП 2%</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                          {i18n.language === 'kk' ? 'Место в топе' : 'Место в топе'}
-                        </span>
-                      </div>
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        ✓ {isKz ? 'Расталған' : isEn ? 'Verified' : 'Верифицирован'}
+                      </span>
                     </div>
 
-                    {/* Profile completion bar */}
-                    <div className="border-t border-slate-200 px-3.5 py-3 dark:border-slate-700">
-                      <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-slate-700 dark:text-slate-300">
-                          {i18n.language === 'kk' ? 'Профиль толтырылуы' : 'Заполненность профиля'}
-                        </span>
-                        <span className="text-emerald-600 dark:text-emerald-400">100%</span>
-                      </div>
-                      <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                        <div className="h-full w-full rounded-full bg-emerald-500 transition-all duration-500" />
-                      </div>
-                      <p className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        ✓ {i18n.language === 'kk' ? 'Профиль толтырылды!' : 'Профиль полностью заполнен!'}
+                    <div className="mt-2">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        {isKz ? 'Әлихан Бақытұлы' : isEn ? 'Alikhan Bakhyt' : 'Алихан Бахытулы'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {isKz ? '10-сынып оқушысы · Робототехника & IT' : isEn ? 'Grade 10 Student · Robotics & IT' : '10 класс · Робототехника & IT'}
                       </p>
                     </div>
 
-                    {/* Grant Offer & AI snippet */}
-                    <div className="border-t border-slate-200 bg-blue-50/50 p-2.5 text-xs dark:border-slate-700 dark:bg-slate-800/40">
+                    {/* Stats metrics */}
+                    <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                      <div className="text-center">
+                        <div className="text-lg font-black text-blue-600 dark:text-blue-400">1,450 XP</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          {isKz ? 'USHQN Ұпай' : isEn ? 'Total XP' : 'USHQN Баллы'}
+                        </div>
+                      </div>
+                      <div className="text-center border-l border-slate-200 dark:border-slate-700">
+                        <div className="text-lg font-black text-slate-900 dark:text-white">ТОП 2%</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          {isKz ? 'Ел рейтингі' : isEn ? 'National Top' : 'В рейтинге'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Verified grant snippet */}
+                    <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-2.5 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
                       <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-[#0052cc] dark:text-blue-400 shrink-0" />
-                        <div>
-                          <div className="font-bold text-[#162a45] dark:text-blue-200 text-[11px]">
-                            Direct Grant Offer · Astana IT Univ.
+                        <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900 dark:text-white text-[11px] truncate">
+                            Astana IT University
                           </div>
-                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                            100% Академиялық грант мақұлданды
+                          <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            ✓ {isKz ? 'Академиялық грант мақұлданды' : isEn ? 'Academic Grant Approved' : 'Академический грант одобрен'}
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Open Profile CTA */}
-                  <div className="px-3.5 pb-4">
-                    <Link
-                      to={session ? '/profile' : '/login'}
-                      className="block w-full rounded-lg bg-[#0052cc] py-2.5 text-center text-xs font-bold text-white shadow-sm transition hover:bg-[#0747a6]"
-                    >
-                      {i18n.language === 'kk' ? 'Профильді ашу →' : 'Открыть профиль →'}
-                    </Link>
+                    <div className="mt-3">
+                      <Link
+                        to={session ? '/profile' : '/login'}
+                        className="block w-full rounded-lg bg-slate-900 py-2 text-center text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                      >
+                        {isKz ? 'Профильді ашу →' : isEn ? 'View Profile →' : 'Открыть профиль →'}
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             </motion.div>
           </div>
 
-          {/* AI Assistant Command Bar underneath hero (like Image 3) */}
-          <div className="mx-auto mt-10 max-w-4xl px-4 sm:px-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-              <form onSubmit={handleAiSearchSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {/* AI Search & Mentor Command Bar */}
+          <div className="mx-auto mt-8 max-w-4xl px-4 sm:px-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+              <form onSubmit={handleAiSearchSubmit} className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
                 <div className="relative flex-1">
-                  <Bot className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Bot className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={
-                      i18n.language === 'kk'
-                        ? 'Көмекшіге сұрақ қойыңыз... (мысалы: "Робототехника бойынша грант жоспары")'
-                        : 'Задайте вопрос AI-помощнику (например: "Робототехника и грант в AITU")...'
+                      isKz
+                        ? 'Сұрақ қойыңыз: "Робототехника бойынша грант жоспары"...'
+                        : isEn
+                        ? 'Ask mentor: "Robotics scholarship roadmap in top university"...'
+                        : 'Задайте вопрос: "План поступления на грант по робототехнике"...'
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-[#0052cc] focus:bg-white focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#162a45] px-6 text-xs font-bold text-white shadow-sm transition hover:bg-[#0f1d30] shrink-0"
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.98] shrink-0 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
                 >
-                  <span>{i18n.language === 'kk' ? 'Жіберу' : 'Отправить'}</span>
+                  <span>{isKz ? 'Сұрау' : isEn ? 'Ask' : 'Спросить'}</span>
                   <Send className="h-3.5 w-3.5" />
                 </button>
               </form>
 
-              {/* Quick Action bar below input */}
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => {
-                    setSearchQuery(i18n.language === 'kk' ? '1 жылдық Карьералық Roadmap алу' : 'Получить 1-летний роадмап к гранту')
+                    setSearchQuery(
+                      isKz
+                        ? '1 жылдық Карьералық Roadmap алу'
+                        : isEn
+                        ? 'Generate 1-year career roadmap'
+                        : 'Получить 1-летний роадмап к гранту'
+                    )
                     handleAiSearchSubmit()
                   }}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#162a45] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#0f1d30]"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                 >
                   <BookOpen className="h-3.5 w-3.5" />
                   <span>
-                    {i18n.language === 'kk'
-                      ? 'Сабақ көмекшісі — AI Карьералық Ментор & 1 жылдық Roadmap алу →'
-                      : 'Помощник в учебе — AI Карьерный Ментор & Роадмап на грант →'}
+                    {isKz
+                      ? 'AI Ментордан 1 жылдық жеке оқу жоспарын алу →'
+                      : isEn
+                      ? 'Get a 1-year personal study roadmap from AI Mentor →'
+                      : 'Получить 1-летний учебный роадмап от AI Ментора →'}
                   </span>
                 </button>
 
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                  <span>Gemini 2.5 Pro Powered</span>
+                <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                  <Sparkles className="h-3 w-3 text-amber-500" />
+                  <span>AI Powered</span>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* AI Assistant Dialog Modal */}
+        {/* AI Assistant Modal Dialog */}
         {aiAssistantModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-            <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:p-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-[#0052cc]" />
+                  <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm">
-                    USHQN AI Карьералық Ментор
+                    {isKz ? 'USHQN AI Карьералық Ментор' : isEn ? 'USHQN AI Career Mentor' : 'USHQN AI Карьерный Ментор'}
                   </h3>
                 </div>
                 <button
@@ -697,28 +820,30 @@ export function LandingPage() {
               <div className="my-4 min-h-[140px] rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-700 dark:bg-slate-800 dark:text-slate-200 whitespace-pre-line">
                 {isAiGenerating ? (
                   <div className="flex flex-col items-center justify-center py-6 gap-2">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#0052cc] border-t-transparent" />
-                    <span className="text-slate-500 font-medium">Талдау жүріп жатыр...</span>
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                    <span className="text-slate-500 font-medium">
+                      {isKz ? 'Талдау жүріп жатыр...' : isEn ? 'Analyzing...' : 'Идет анализ...'}
+                    </span>
                   </div>
                 ) : (
                   aiResponseText
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-2.5">
+              <div className="flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setAiAssistantModal(false)}
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
-                  Жабу
+                  {isKz ? 'Жабу' : isEn ? 'Close' : 'Закрыть'}
                 </button>
                 <Link
                   to="/register"
                   onClick={() => setAiAssistantModal(false)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#162a45] px-4 py-2 text-xs font-bold text-white hover:bg-[#0f1d30]"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
                 >
-                  <span>Толық картаны ашу</span>
+                  <span>{isKz ? 'Толық картаны ашу' : isEn ? 'Open Full Roadmap' : 'Открыть роадмап'}</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -726,85 +851,89 @@ export function LandingPage() {
           </div>
         )}
 
-        {/* Dynamic Key Stats Counter Bar */}
-        <section className="border-y border-slate-200 bg-white py-10 dark:border-slate-800 dark:bg-slate-900/60">
+        {/* Dynamic Key Stats Counter */}
+        <section className="border-y border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900/60 sm:py-10">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-8">
               <StatCounter
                 n={12400}
                 suffix="+"
-                label={i18n.language === 'kk' ? 'Белсенді оқушылар' : 'Активных школьников'}
+                label={isKz ? 'Қатысушы оқушылар' : isEn ? 'Active Students' : 'Активных школьников'}
               />
               <StatCounter
                 n={850}
                 suffix="+"
-                label={i18n.language === 'kk' ? 'Расталған жобалар' : 'Верифицированных проектов'}
+                label={isKz ? 'Расталған жетістіктер' : isEn ? 'Verified Projects' : 'Верифицированных проектов'}
               />
               <StatCounter
-                n={42}
-                suffix=""
-                label={i18n.language === 'kk' ? 'Серіктес ЖОО & Қорлар' : 'Партнерских вузов и фондов'}
+                n={40}
+                suffix="+"
+                label={isKz ? 'Серіктес ЖОО және қорлар' : isEn ? 'Partner Universities' : 'Партнерских вузов и фондов'}
               />
               <StatCounter
                 n={100}
                 suffix="%"
-                label={i18n.language === 'kk' ? 'Тегін бастапқы пакет' : 'Бесплатный старт'}
+                label={isKz ? 'Тегін бастапқы мүмкіндік' : isEn ? 'Free Start' : 'Бесплатный старт'}
               />
             </div>
           </div>
         </section>
 
-        {/* 4 Core Pillars of USHQN Startup Ecosystem */}
-        <section id="pillars" className="py-20 sm:py-28">
+        {/* 4 Core Pillars */}
+        <section id="pillars" className="py-16 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                 <Layers className="h-3.5 w-3.5" />
-                <span>{i18n.language === 'kk' ? 'USHQN Экожүйесінің 4 Бағаны' : '4 Технологических Блока USHQN'}</span>
+                <span>{isKz ? 'Экожүйенің 4 негізгі бағаны' : isEn ? '4 Core Ecosystem Pillars' : '4 технологических блока'}</span>
               </div>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                {i18n.language === 'kk'
-                  ? 'Білім мен гранттар нарығындағы мәселелерді түбегейлі шешу'
-                  : 'Революция в профориентации и поступлении на гранты'}
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
+                {isKz
+                  ? 'Оқушы мен ЖОО арасындағы сенімді көпір'
+                  : isEn
+                  ? 'The trusted bridge from school to university'
+                  : 'Надежный мост от школы к университету'}
               </h2>
-              <p className="mt-4 text-base text-slate-600 dark:text-slate-300">
-                {i18n.language === 'kk'
-                  ? 'Шашыраңқы қағаз сертификаттар мен кездейсоқ тесттердің орнына — расталған цифрлық із, AI бағыттау және ЖОО-лармен тікелей байланыс.'
-                  : 'Вместо утерянных бумажных грамот и хаотичной профориентации — оцифрованный треккинг, ИИ-ментор и прямые офферы.'}
+              <p className="mt-2.5 text-sm text-slate-600 dark:text-slate-300 sm:text-base">
+                {isKz
+                  ? 'Шашыраңқы қағаз құжаттар мен кездейсоқ таңдаудың орнына — бірыңғай цифрлық із, AI бағыттау және нақты нәтиже.'
+                  : isEn
+                  ? 'Instead of lost paper certificates and guesswork — verified tracking, AI guidance, and direct admission offers.'
+                  : 'Вместо утерянных бумажных дипломов и случайного выбора — оцифрованный треккинг, AI-навигатор и прямые офферы.'}
               </p>
             </div>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-2">
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:gap-6">
               {corePillars.map((pillar, i) => {
                 const Icon = pillar.icon
                 return (
                   <motion.div
                     key={pillar.title}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.45, delay: i * 0.1 }}
-                    className="relative flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition hover:border-indigo-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-800"
+                    transition={{ duration: 0.35, delay: i * 0.08 }}
+                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700"
                   >
                     <div>
                       <div className="flex items-center justify-between">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
-                          <Icon className="h-6 w-6" />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                          <Icon className="h-5 w-5" />
                         </div>
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           {pillar.badge}
                         </span>
                       </div>
 
-                      <div className="mt-5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                      <div className="mt-4 text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                         {pillar.tag}
                       </div>
-                      <h3 className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{pillar.title}</h3>
-                      <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{pillar.desc}</p>
+                      <h3 className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{pillar.title}</h3>
+                      <p className="mt-2 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300">{pillar.desc}</p>
                     </div>
 
-                    <div className="mt-6 border-t border-slate-100 pt-4 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                      <span>{i18n.language === 'kk' ? 'Толығырақ білу' : 'Узнать больше'}</span>
+                    <div className="mt-5 border-t border-slate-100 pt-3 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400">
+                      <span>{isKz ? 'Толығырақ білу' : isEn ? 'Learn more' : 'Узнать больше'}</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </div>
                   </motion.div>
@@ -817,43 +946,47 @@ export function LandingPage() {
         {/* Interactive AI Career Roadmap Simulator */}
         <section
           id="roadmap-demo"
-          className="border-t border-slate-200 bg-slate-100/60 py-20 dark:border-slate-800 dark:bg-slate-900/40 sm:py-28"
+          className="border-t border-slate-200 bg-slate-100/60 py-16 dark:border-slate-800 dark:bg-slate-900/40 sm:py-24"
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="text-center max-w-2xl mx-auto">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                 <Bot className="h-3.5 w-3.5" />
-                <span>AI Career Mentor Simulator</span>
+                <span>{isKz ? 'AI Карьералық Навигатор' : isEn ? 'AI Career Navigator' : 'AI Карьерный Навигатор'}</span>
               </div>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                {i18n.language === 'kk'
-                  ? 'Жасанды Интеллект сіздің жеке Роадмапыңызды қалай құрады?'
-                  : 'Как AI-Ментор строит персональный роадмап к гранту'}
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
+                {isKz
+                  ? 'Грантқа жетудің жеке жоспары қалай құрылады?'
+                  : isEn
+                  ? 'How does the AI Navigator build your path?'
+                  : 'Как AI-Навигатор строит персональный путь к гранту?'}
               </h2>
-              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-                {i18n.language === 'kk'
-                  ? 'Бағытты таңдаңыз және 7-11 сынып оқушысының қадамдық грант жоспарын көріңіз.'
-                  : 'Выберите направление и посмотрите персональный план поступления на грант.'}
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                {isKz
+                  ? 'Бағытты таңдап, 7–11 сынып оқушысының қадамдық дайындық жоспарын көріңіз.'
+                  : isEn
+                  ? 'Select a track to see the step-by-step preparation plan.'
+                  : 'Выберите направление и посмотрите пошаговый план подготовки.'}
               </p>
             </div>
 
-            {/* Trajectory Switcher */}
-            <div className="mt-8 flex flex-wrap justify-center gap-2.5">
+            {/* Trajectory Tab Switcher */}
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
               {(
                 [
-                  { id: 'robotics', label: '🤖 Робототехника & Mechatronics' },
-                  { id: 'it', label: '💻 IT & AI Engineering' },
-                  { id: 'med', label: '🧬 BioTech & Медицина' },
-                  { id: 'business', label: '📊 FinTech & Бизнес' },
+                  { id: 'robotics', label: isKz ? '🤖 Робототехника' : isEn ? '🤖 Robotics' : '🤖 Робототехника' },
+                  { id: 'it', label: isKz ? '💻 IT & Бағдарламалау' : isEn ? '💻 IT & Software' : '💻 IT & Разработка' },
+                  { id: 'med', label: isKz ? '🧬 Биомедицина' : isEn ? '🧬 Biomedicine' : '🧬 Биомедицина' },
+                  { id: 'business', label: isKz ? '📊 FinTech & Бизнес' : isEn ? '📊 FinTech & Business' : '📊 FinTech & Бизнес' },
                 ] as const
               ).map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setSelectedTrajectory(tab.id)}
-                  className={`rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+                  className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                     selectedTrajectory === tab.id
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
+                      ? 'bg-slate-900 text-white shadow-xs dark:bg-white dark:text-slate-900'
                       : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                   }`}
                 >
@@ -862,86 +995,88 @@ export function LandingPage() {
               ))}
             </div>
 
-            {/* Interactive Roadmap Flow Card */}
-            <div className="mt-8 mx-auto max-w-4xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900 sm:p-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-5 dark:border-slate-800 gap-3">
+            {/* Trajectory Card Display */}
+            <div className="mt-6 mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-5 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-7">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800 gap-2">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                    AI Direction Engine · Verified Track
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                    Verified Trajectory
                   </span>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                     {trajectoryData[selectedTrajectory].title}
                   </h3>
                 </div>
-                <div className="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
+                <div className="rounded-xl bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
                   🎯 {trajectoryData[selectedTrajectory].score}
                 </div>
               </div>
 
-              {/* Step Sequence */}
-              <div className="mt-8 space-y-6">
+              {/* Steps Sequence */}
+              <div className="mt-6 space-y-4">
                 {trajectoryData[selectedTrajectory].steps.map((st, idx) => (
-                  <div key={idx} className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 font-black text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                  <div key={idx} className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 font-black text-xs text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
                       0{idx + 1}
                     </div>
-                    <div className="flex-1 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-800/40">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    <div className="flex-1 rounded-xl border border-slate-100 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                         {st.grade}
                       </span>
-                      <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-200">{st.task}</p>
+                      <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">{st.task}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-8 flex justify-center">
+              <div className="mt-6 flex justify-center">
                 <Link
                   to="/register"
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-md shadow-indigo-600/25 transition hover:bg-indigo-700"
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
                 >
                   <span>
-                    {i18n.language === 'kk'
-                      ? 'Өз жеке Roadmap-іңізді тегін құрыңыз'
-                      : 'Создать свой персональный роадмап бесплатно'}
+                    {isKz
+                      ? 'Өз жеке Roadmap-іңізді құрыңыз'
+                      : isEn
+                      ? 'Create your personalized roadmap'
+                      : 'Создать персональный роадмап'}
                   </span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Value by Persona (B2C, B2B, B2G) */}
-        <section id="personas" className="py-20 sm:py-28">
+        {/* Value by Persona */}
+        <section id="personas" className="py-16 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="max-w-2xl">
-              <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                {i18n.language === 'kk' ? 'Әр тарапқа пайдасы' : 'Ценность для участников'}
+              <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                {isKz ? 'Барлық тарапқа арналған' : isEn ? 'Value for Everyone' : 'Для всех участников'}
               </div>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                {i18n.language === 'kk' ? 'USHQN барлық тарапқа не береді?' : 'Почему USHQN выгоден каждому?'}
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
+                {isKz ? 'USHQN экожүйесінің пайдасы' : isEn ? 'Benefits of USHQN Ecosystem' : 'Преимущества экосистемы USHQN'}
               </h2>
             </div>
 
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {personas.map((p, idx) => {
                 const PIcon = p.icon
                 return (
                   <motion.div
                     key={p.role}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.45, delay: idx * 0.08 }}
-                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                    transition={{ duration: 0.35, delay: idx * 0.06 }}
+                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
                   >
                     <div>
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl border ${p.color}`}>
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${p.color}`}>
                         <PIcon className="h-5 w-5" />
                       </div>
-                      <h3 className="mt-5 text-base font-bold text-slate-900 dark:text-white">{p.role}</h3>
-                      <ul className="mt-4 space-y-2.5">
+                      <h3 className="mt-4 text-sm sm:text-base font-bold text-slate-900 dark:text-white">{p.role}</h3>
+                      <ul className="mt-3 space-y-2">
                         {p.bullets.map((b, i) => (
                           <li key={i} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
                             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
@@ -957,44 +1092,48 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* 3-Step Process: How it works */}
-        <section id="how" className="border-t border-slate-200 bg-slate-100/60 py-20 dark:border-slate-800 dark:bg-slate-900/40 sm:py-28">
+        {/* 3-Step Process */}
+        <section id="how" className="border-t border-slate-200 bg-slate-100/60 py-16 dark:border-slate-800 dark:bg-slate-900/40 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="text-center">
-              <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                {t('landing.howKicker', 'Простой старт')}
+              <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                {isKz ? 'Оңай бастау' : isEn ? 'Quick Start' : 'Простой старт'}
               </div>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                {i18n.language === 'kk'
-                  ? 'Оқушының қарапайым 3 қадамы'
-                  : 'Три простых шага к результату'}
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
+                {isKz ? 'Нәтижеге жетудің 3 қадамы' : isEn ? '3 Steps to Success' : 'Три шага к результату'}
               </h2>
             </div>
 
-            <div className="mt-14 grid gap-8 md:grid-cols-3">
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
               {[
                 {
                   num: '01',
-                  title: i18n.language === 'kk' ? '1. Тіркелу & Скрининг' : '1. Регистрация и скрининг',
-                  desc: i18n.language === 'kk'
-                    ? 'Платформаға тіркеліп, өзіңіздің негізгі қызығушылықтарыңызды (IT, Робототехника, Дизайн) таңдаңыз.'
-                    : 'Зарегистрируйтесь и выберите свои ключевые сферы интересов и школьные предметы.',
+                  title: isKz ? '1. Тіркелу және бағыт таңдау' : isEn ? '1. Sign up & choose track' : '1. Регистрация и выбор сферы',
+                  desc: isKz
+                    ? 'Платформаға тіркеліп, өзіңіздің негізгі қызығушылықтарыңызды (IT, Робототехника, Медицина) белгілеңіз.'
+                    : isEn
+                    ? 'Create your account and select your main areas of interest (IT, Robotics, Biotech).'
+                    : 'Зарегистрируйтесь и выберите ключевые сферы интересов и школьные предметы.',
                   icon: GraduationCap,
                 },
                 {
                   num: '02',
-                  title: i18n.language === 'kk' ? '2. Портфолио & AI Roadmap' : '2. Портфолио и AI-роадмап',
-                  desc: i18n.language === 'kk'
-                    ? 'Сертификаттар мен жобаларды жүктеңіз, ЖИ оларды тексеріп, XP беріп, грантқа жеке жоспар құрады.'
-                    : 'Загружайте дипломы и проекты — ИИ начислит XP и построит персональную траекторию.',
+                  title: isKz ? '2. Портфолио және Roadmap' : isEn ? '2. Portfolio & Roadmap' : '2. Портфолио и AI-роадмап',
+                  desc: isKz
+                    ? 'Дипломдар мен жобаларды жүктеңіз. AI оларды тексеріп, XP ұпайын беріп, қадамдық дайындық жоспарын сызады.'
+                    : isEn
+                    ? 'Upload diplomas and projects. AI verifies them, awards XP, and builds a customized growth path.'
+                    : 'Загружайте дипломы и проекты. AI проверит их, начислит XP и построит персональный роадмап.',
                   icon: FileCheck,
                 },
                 {
                   num: '03',
-                  title: i18n.language === 'kk' ? '3. Деңгей өсіру & Грант алу' : '3. Рост уровня и офферы',
-                  desc: i18n.language === 'kk'
+                  title: isKz ? '3. Деңгей өсіру және Грант алу' : isEn ? '3. Level up & Get Grants' : '3. Рост уровня и офферы',
+                  desc: isKz
                     ? 'Рейтингте көтеріліп, серіктес ЖОО мен қорлардан тікелей грант және стипендия ұсыныстарын алыңыз.'
-                    : 'Прокачивайте профиль в рейтинге и получайте прямые офферы на гранты от партнерских вузов.',
+                    : isEn
+                    ? 'Level up on the leaderboard and receive direct grant offers from partner universities.'
+                    : 'Прокачивайте профиль в рейтинге и получайте прямые предложения грантов от ведущих вузов.',
                   icon: Rocket,
                 },
               ].map((step, idx) => {
@@ -1002,21 +1141,21 @@ export function LandingPage() {
                 return (
                   <motion.div
                     key={step.num}
-                    initial={{ opacity: 0, y: 24 }}
+                    initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: idx * 0.12 }}
-                    className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                    transition={{ duration: 0.35, delay: idx * 0.08 }}
+                    className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
-                        <StepIcon className="h-6 w-6" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                        <StepIcon className="h-5 w-5" />
                       </div>
-                      <span className="text-2xl font-black text-slate-300 dark:text-slate-700">{step.num}</span>
+                      <span className="text-xl font-black text-slate-300 dark:text-slate-700">{step.num}</span>
                     </div>
 
-                    <h3 className="mt-6 text-xl font-bold text-slate-900 dark:text-white">{step.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{step.desc}</p>
+                    <h3 className="mt-4 text-base font-bold text-slate-900 dark:text-white">{step.title}</h3>
+                    <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400">{step.desc}</p>
                   </motion.div>
                 )
               })}
@@ -1024,70 +1163,70 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Voices / Reviews */}
-        <section id="stories" className="py-20 sm:py-28">
+        {/* Reviews Section */}
+        <section id="stories" className="py-16 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="max-w-2xl">
-              <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                {t('landing.voicesKicker', 'Отзывы сообщества')}
+              <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                {isKz ? 'Қатысушылар пікірі' : isEn ? 'Community Reviews' : 'Отзывы участников'}
               </div>
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                {i18n.language === 'kk' ? 'Оқушылар мен ұстаздар пікірі' : 'Опыт участников USHQN'}
+              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
+                {isKz ? 'Оқушылар мен ұстаздар не дейді?' : isEn ? 'What students & teachers say' : 'Что говорят школьники и педагоги'}
               </h2>
             </div>
 
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 {
-                  name: 'Алия Н.',
-                  role: i18n.language === 'kk' ? '11-сынып, Алматы (Astana IT грант иегері)' : '11 класс, Алматы',
-                  text: i18n.language === 'kk'
-                    ? 'USHQN-дағы расталған портфолио менің барлық хакатондарымды көрсетіп, грант алуыма тікелей көмектесті!'
-                    : 'QR-паспорт заменил кипу бумажных дипломов, а вуз сам связался со мной благодаря рейтингу.',
+                  name: isKz ? 'Әлия Н.' : 'Алия Н.',
+                  role: isKz ? '11-сынып, Алматы (Astana IT University грант иегері)' : '11 класс, Алматы (Грант в AITU)',
+                  text: isKz
+                    ? 'USHQN-дағы расталған портфолио менің барлық хакатондарымды жүйелеп, грант алуыма тікелей көмектесті!'
+                    : 'QR-паспорт объединил все мои грамоты и победы в хакатонах, а университет сам связался со мной.',
                   score: 'Lvl 18 · 4,840 XP',
                 },
                 {
-                  name: 'Данияр С.',
-                  role: i18n.language === 'kk' ? '10-сынып, Шымкент (WRO қатысушысы)' : '10 класс, Шымкент',
-                  text: i18n.language === 'kk'
-                    ? 'AI Ментор маған робототехника бойынша қандай олимпиадаларға қатысу керектігін нақты көрсетті.'
-                    : 'AI Ментор точно рассчитал мой роадмап: какие хакатоны пройти и как поднять IELTS.',
+                  name: isKz ? 'Данияр С.' : 'Данияр С.',
+                  role: isKz ? '10-сынып, Шымкент (WRO қатысушысы)' : '10 класс, Шымкент (Участник WRO)',
+                  text: isKz
+                    ? 'AI Ментор маған робототехника бойынша қандай олимпиадаларға қатысу керектігін нақты есептеп берді.'
+                    : 'AI Ментор точно рассчитал роадмап: в каких олимпиадах участвовать и как системно поднять баллы.',
                   score: 'Lvl 14 · 3,120 XP',
                 },
                 {
-                  name: 'Марина К.',
-                  role: i18n.language === 'kk' ? 'Информатика пәні мұғалімі, ментор' : 'Учитель информатики, ментор',
-                  text: i18n.language === 'kk'
-                    ? 'Оқушылардың барлық жетістігін бір жерде көру және оларды ынталандыру өте ыңғайлы.'
-                    : 'Очень удобно отслеживать успеваемость и практические проекты своих учеников в одном месте.',
+                  name: isKz ? 'Марина К.' : 'Марина К.',
+                  role: isKz ? 'Информатика пәні мұғалімі, ментор' : 'Учитель информатики, ментор',
+                  text: isKz
+                    ? 'Оқушылардың барлық ғылыми жобаларын бір жерде көру және оларды ынталандыру өте ыңғайлы болды.'
+                    : 'Очень удобно отслеживать успеваемость и практические достижения своих учеников в единой системе.',
                   score: 'Verified Mentor',
                 },
               ].map((story, i) => (
                 <motion.div
                   key={story.name}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.45, delay: i * 0.1 }}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                  transition={{ duration: 0.35, delay: i * 0.08 }}
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
                 >
                   <div>
                     <div className="flex items-center gap-1 text-amber-400">
                       {[...Array(5)].map((_, idx) => (
-                        <Star key={idx} className="h-4 w-4 fill-amber-400" />
+                        <Star key={idx} className="h-3.5 w-3.5 fill-amber-400" />
                       ))}
                     </div>
-                    <p className="mt-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300 italic">
+                    <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 italic">
                       «{story.text}»
                     </p>
                   </div>
 
-                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
+                  <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
                     <div>
-                      <div className="font-bold text-slate-900 dark:text-white">{story.name}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{story.role}</div>
+                      <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{story.name}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">{story.role}</div>
                     </div>
-                    <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
                       {story.score}
                     </span>
                   </div>
@@ -1098,33 +1237,33 @@ export function LandingPage() {
         </section>
 
         {/* Final Conversion CTA Banner */}
-        <section className="pb-20 sm:pb-28">
+        <section className="pb-16 sm:pb-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-tr from-indigo-950 via-indigo-900 to-slate-950 p-8 text-white shadow-2xl sm:p-12 lg:p-16">
-              <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl" />
-              <div className="pointer-events-none absolute -left-20 -bottom-20 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
-
-              <div className="relative grid gap-10 lg:grid-cols-12 lg:items-center">
+            <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 text-white shadow-xl sm:p-10 lg:p-14 dark:bg-slate-900 border border-slate-800">
+              <div className="relative grid gap-8 lg:grid-cols-12 lg:items-center">
                 <div className="lg:col-span-7">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-indigo-200">
-                    <Zap className="h-3.5 w-3.5 fill-indigo-300" />
-                    <span>{i18n.language === 'kk' ? 'Болашаққа қадам жаса' : 'Старт в карьеру'}</span>
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-300">
+                    <Zap className="h-3.5 w-3.5 fill-blue-300" />
+                    <span>{isKz ? 'Болашаққа қадам жасаңыз' : isEn ? 'Take the Next Step' : 'Старт в будущее'}</span>
                   </div>
-                  <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
-                    {i18n.language === 'kk'
-                      ? 'USHQN (ҰШҚЫН) экожүйесіне қосылыңыз'
-                      : 'Готовы подключиться к USHQN?'}
+                  <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl lg:text-4xl">
+                    {isKz
+                      ? 'USHQN экожүйесіне бүгін қосылыңыз'
+                      : isEn
+                      ? 'Join the USHQN Ecosystem today'
+                      : 'Подключайтесь к экосистеме USHQN'}
                   </h2>
-                  <p className="mt-4 max-w-lg text-base text-indigo-100 sm:text-lg">
-                    {i18n.language === 'kk'
-                      ? 'Өз цифрлық паспортыңызды бүгін ашыңыз, AI ментормен мақсат қойыңыз және ЖОО гранттарын жақындатыңыз.'
-                      : 'Создайте свой цифровой паспорт, прокачивайте уровень и получайте предложения от лучших вузов.'}
+                  <p className="mt-2.5 max-w-lg text-xs sm:text-sm leading-relaxed text-slate-300">
+                    {isKz
+                      ? 'Жеке цифрлық паспортыңызды ашып, AI ментормен мақсаттарыңызға жетіңіз және жетекші ЖОО гранттарына қол жеткізіңіз.'
+                      : isEn
+                      ? 'Create your digital passport, set goals with AI Mentor, and unlock direct university grants.'
+                      : 'Создайте свой цифровой паспорт, выстраивайте траекторию с AI-ментором и получайте прямые гранты.'}
                   </p>
 
-                  {/* Trust Bullet Items */}
-                  <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
                     {CTA_CHECKS.map((item) => (
-                      <div key={item} className="flex items-center gap-2 text-xs font-medium text-indigo-100">
+                      <div key={item} className="flex items-center gap-2 text-xs text-slate-200">
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
                         <span>{item}</span>
                       </div>
@@ -1132,32 +1271,32 @@ export function LandingPage() {
                   </div>
                 </div>
 
-                <div className="lg:col-span-5 flex flex-col gap-3.5 sm:flex-row lg:flex-col lg:items-end">
+                <div className="lg:col-span-5 flex flex-col gap-2.5 sm:flex-row lg:flex-col lg:items-end">
                   {session ? (
                     <Link
                       to="/home"
                       id="cta-band-to-app-btn"
-                      className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-bold text-slate-900 shadow-xl transition hover:bg-slate-100 active:scale-[0.98] sm:w-auto"
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-6 text-xs font-bold text-slate-900 shadow-md transition hover:bg-slate-100 active:scale-[0.98] sm:w-auto"
                     >
                       <span>{t('landing.toApp', 'В приложение')}</span>
-                      <ArrowRight className="h-4 w-4 text-indigo-600" />
+                      <ArrowRight className="h-4 w-4 text-blue-600" />
                     </Link>
                   ) : (
                     <>
                       <Link
                         to="/register"
                         id="cta-band-register-btn"
-                        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-bold text-slate-900 shadow-xl transition hover:bg-slate-100 active:scale-[0.98] sm:w-auto"
+                        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-6 text-xs font-bold text-slate-900 shadow-md transition hover:bg-slate-100 active:scale-[0.98] sm:w-auto"
                       >
-                        <span>{i18n.language === 'kk' ? 'Тегін тіркелу' : 'Создать аккаунт'}</span>
-                        <ArrowRight className="h-4 w-4 text-indigo-600" />
+                        <span>{isKz ? 'Тегін тіркелу' : isEn ? 'Create Account' : 'Создать аккаунт'}</span>
+                        <ArrowRight className="h-4 w-4 text-blue-600" />
                       </Link>
                       <Link
                         to="/login"
                         id="cta-band-login-btn"
-                        className="inline-flex h-14 w-full items-center justify-center rounded-xl border border-white/25 bg-white/10 px-8 text-sm font-bold text-white transition hover:bg-white/20 active:scale-[0.98] sm:w-auto"
+                        className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-white/20 bg-white/10 px-6 text-xs font-bold text-white transition hover:bg-white/15 active:scale-[0.98] sm:w-auto"
                       >
-                        {t('landing.login', 'Войти')}
+                        {isKz ? 'Кіру' : isEn ? 'Log in' : 'Войти'}
                       </Link>
                     </>
                   )}
@@ -1168,31 +1307,31 @@ export function LandingPage() {
         </section>
       </main>
 
-      {/* Modern Footer */}
-      <footer className="border-t border-slate-200 bg-white py-12 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold">
-              <Zap className="h-4 w-4 fill-white" />
+      {/* Clean Footer */}
+      <footer className="border-t border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-white font-bold dark:bg-white dark:text-slate-900">
+              <Zap className="h-3.5 w-3.5 fill-current" />
             </div>
-            <span className="font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <span className="font-extrabold tracking-tight text-slate-900 dark:text-white text-sm">
               USHQN (ҰШҚЫН) EdTech
             </span>
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
-            © {new Date().getFullYear()} USHQN Ecosystem. {i18n.language === 'kk' ? 'Барлық құқықтар қорғалған.' : 'Все права защищены.'}
+            © {new Date().getFullYear()} USHQN Ecosystem. {isKz ? 'Барлық құқықтар қорғалған.' : isEn ? 'All rights reserved.' : 'Все права защищены.'}
           </p>
 
-          <div className="flex items-center gap-6 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-            <a href="#pillars" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-              {i18n.language === 'kk' ? 'Экожүйе' : 'Экосистема'}
+          <div className="flex items-center gap-5 text-xs font-semibold text-slate-600 dark:text-slate-400">
+            <a href="#pillars" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
+              {isKz ? 'Экожүйе' : isEn ? 'Pillars' : 'Экосистема'}
             </a>
-            <a href="#roadmap-demo" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-              AI Roadmap
+            <a href="#roadmap-demo" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Roadmap
             </a>
-            <a href="#personas" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-              {i18n.language === 'kk' ? 'Пайдасы' : 'Ценность'}
+            <a href="#personas" className="hover:text-blue-600 dark:hover:text-blue-400 transition">
+              {isKz ? 'Пайдасы' : isEn ? 'For Whom' : 'Ценность'}
             </a>
           </div>
         </div>

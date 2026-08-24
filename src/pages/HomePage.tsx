@@ -1,25 +1,22 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AppPageMeta } from '../components/AppPageMeta'
-import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
-import { DashboardAiAssistantBar } from '../components/DashboardAiAssistantBar'
-import { CareerDiagnosticRadar } from '../components/CareerDiagnosticRadar'
-import { DigitalPassportCard, DigitalPassportModal } from '../components/DigitalPassportModal'
-import { GamificationBanner } from '../components/GamificationBanner'
-import { UniversityDirectOffers } from '../components/UniversityDirectOffers'
-import { ParentTalentReport } from '../components/ParentTalentReport'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { clearReferralFromStorage } from '../lib/referral'
 import {
-  Compass,
-  ShieldCheck,
   Trophy,
-  Building2,
-  Users,
-  Layers,
+  Calendar,
+  Award,
+  ArrowRight,
+  TrendingUp,
+  Briefcase,
+  Flame,
+  PlusCircle,
+  ShieldCheck,
+  Compass,
 } from 'lucide-react'
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -41,13 +38,6 @@ export function HomePage() {
   const isKz = i18n.language === 'kk'
   const isRu = i18n.language === 'ru'
 
-  const [activeTab, setActiveTab] = useState<'all' | 'roadmap' | 'passport' | 'gamification' | 'grants' | 'parent'>('all')
-  const [isPassportModalOpen, setIsPassportModalOpen] = useState(false)
-
-  const hour = new Date().getHours()
-  const greetingKey =
-    hour < 12 ? 'home.greetingMorning' : hour < 18 ? 'home.greetingDay' : 'home.greetingEvening'
-
   useEffect(() => {
     if (!userId) return
     void supabase.auth.getUser().then(({ data }) => {
@@ -57,37 +47,11 @@ export function HomePage() {
     })
   }, [userId])
 
-  const QUICK_ACTIONS = [
-    { to: '/achievements', emoji: '🏆', label: t('home.quickActions.addAchievement'), color: 'bg-[#162a45] text-white hover:bg-[#0f1d30]' },
-    { to: '/jobs', emoji: '💼', label: t('home.quickActions.findJob'), color: 'bg-[#0052cc] text-white hover:bg-[#0047b3]' },
-    { to: '/people', emoji: '👥', label: t('home.quickActions.findPeople'), color: 'bg-slate-800 text-white hover:bg-slate-900' },
-    { to: '/calendar', emoji: '📅', label: t('home.quickActions.events'), color: 'bg-emerald-700 text-white hover:bg-emerald-800' },
-    { to: '/communities', emoji: '📍', label: t('home.quickActions.communities'), color: 'bg-purple-700 text-white hover:bg-purple-800' },
-  ]
-
-  const recentAchievements = useQuery({
-    queryKey: ['achievements-preview', userId],
+  const profileQuery = useQuery({
+    queryKey: ['home-profile', userId],
     enabled: Boolean(userId),
     queryFn: async () => {
-      const [{ data: rows }, { data: cats }] = await Promise.all([
-        supabase
-          .from('achievements')
-          .select('id,title,points_awarded,created_at,category_id')
-          .eq('user_id', userId!)
-          .order('created_at', { ascending: false })
-          .limit(4),
-        supabase.from('achievement_categories').select('id,slug'),
-      ])
-      const slugMap = new Map((cats ?? []).map((c) => [c.id, c.slug as string]))
-      return (rows ?? []).map((a) => ({ ...a, slug: slugMap.get(a.category_id) ?? 'other' }))
-    },
-  })
-
-  const meQuery = useQuery({
-    queryKey: ['home-me', userId],
-    enabled: Boolean(userId),
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('display_name').eq('id', userId!).single()
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId!).single()
       if (error) throw error
       return data
     },
@@ -97,11 +61,13 @@ export function HomePage() {
     queryKey: ['home-stats', userId],
     enabled: Boolean(userId),
     queryFn: async () => {
-      const [{ count: achCount }, { count: followersCount }] = await Promise.all([
+      const [{ count: achCount }, { count: followersCount }, { data: scores }] = await Promise.all([
         supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('user_id', userId!),
         supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId!),
+        supabase.from('user_category_scores').select('points').eq('user_id', userId!),
       ])
-      return { achCount: achCount ?? 0, followersCount: followersCount ?? 0 }
+      const totalPoints = (scores ?? []).reduce((s, r) => s + (r.points as number), 0)
+      return { achCount: achCount ?? 0, followersCount: followersCount ?? 0, totalPoints }
     },
   })
 
@@ -126,6 +92,24 @@ export function HomePage() {
     })
   }, [userId, qc])
 
+  const recentAchievements = useQuery({
+    queryKey: ['achievements-preview', userId],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const [{ data: rows }, { data: cats }] = await Promise.all([
+        supabase
+          .from('achievements')
+          .select('id,title,points_awarded,created_at,category_id')
+          .eq('user_id', userId!)
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase.from('achievement_categories').select('id,slug'),
+      ])
+      const slugMap = new Map((cats ?? []).map((c) => [c.id, c.slug as string]))
+      return (rows ?? []).map((a) => ({ ...a, slug: slugMap.get(a.category_id) ?? 'other' }))
+    },
+  })
+
   const upcomingEvents = useQuery({
     queryKey: ['upcoming-events', userId],
     enabled: Boolean(userId),
@@ -140,263 +124,276 @@ export function HomePage() {
     },
   })
 
-  function handleAiBarAction(actionId: string) {
-    if (actionId === 'roadmap') setActiveTab('roadmap')
-    else if (actionId === 'passport') setIsPassportModalOpen(true)
-    else if (actionId === 'gamification') setActiveTab('gamification')
-    else if (actionId === 'grants') setActiveTab('grants')
-    else if (actionId === 'parent') setActiveTab('parent')
-  }
-
-  const tabs = [
-    { id: 'all', label: isKz ? 'Барлық бөлімдер' : isRu ? 'Все модули' : 'All Modules', icon: Layers },
-    { id: 'roadmap', label: isKz ? '1. 🤖 AI Roadmap' : isRu ? '1. 🤖 AI Roadmap' : '1. 🤖 AI Roadmap', icon: Compass },
-    { id: 'passport', label: isKz ? '2. 🛡️ QR Паспорт' : isRu ? '2. 🛡️ QR Паспорт' : '2. 🛡️ QR Passport', icon: ShieldCheck },
-    { id: 'gamification', label: isKz ? '3. 🎮 RPG & XP' : isRu ? '3. 🎮 RPG & XP' : '3. 🎮 RPG & XP', icon: Trophy },
-    { id: 'grants', label: isKz ? '4. 🏛️ ЖОО Гранттары' : isRu ? '4. 🏛️ Гранты вузов' : '4. 🏛️ Grants', icon: Building2 },
-    { id: 'parent', label: isKz ? '5. 👨‍👩‍👧 Ата-ана' : isRu ? '5. 👨‍👩‍👧 Родителям' : '5. 👨‍👩‍👧 Parent', icon: Users },
-  ]
+  const p = profileQuery.data
+  const totalPoints = statsQuery.data?.totalPoints ?? 0
+  const achCount = statsQuery.data?.achCount ?? 0
+  const streakCount = streakQuery.data?.activity_streak_count ?? 1
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
+    <div className="mx-auto max-w-5xl space-y-6 pb-12">
       <AppPageMeta title={t('nav.home')} />
 
-      {/* Left profile sidebar — sticky on scroll */}
-      <aside className="hidden lg:block">
-        <div className="sticky top-6 space-y-4">
-          <MiniProfileSidebar />
-        </div>
-      </aside>
-
-      <div className="space-y-4">
-        {/* Top Clean Greeting Card */}
-        <section className="ushqn-card border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {t(greetingKey)} · USHQN Talent Platform
-              </p>
-              <h1 className="mt-0.5 text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
-                {meQuery.data?.display_name || t('home.greetingFallbackName')}
-              </h1>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsPassportModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#162a45] px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-[#0f1d30]"
-            >
-              <ShieldCheck className="h-4 w-4 text-[#38bdf8]" />
-              <span>{isKz ? 'Цифрлық QR Паспорт' : isRu ? 'Цифровой QR Паспорт' : 'Digital QR Passport'}</span>
-            </button>
-          </div>
-        </section>
-
-        {/* AI Assistant Command Bar (Synapp-style clean search & prompt bar) */}
-        <DashboardAiAssistantBar onSelectAction={handleAiBarAction} />
-
-        {/* Category Tabs for Quick Navigation */}
-        <div className="flex overflow-x-auto pb-1 scrollbar-none gap-1.5">
-          {tabs.map((tab) => {
-            const Icon = tab.icon
-            const isSelected = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as 'all' | 'roadmap' | 'passport' | 'gamification' | 'grants' | 'parent')}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  isSelected
-                    ? 'bg-[#162a45] text-white shadow-xs dark:bg-blue-600'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{tab.label}</span>
-              </button>
-            )
-          })}
+      {/* Top Minimal Header */}
+      <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 pt-2 sm:flex-row sm:items-center dark:border-slate-800">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {p?.display_name || 'Платформа'}
+          </h1>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            {isKz ? 'USHQN цифрлық портфолио және оқушылар қауымдастығы' : isRu ? 'Цифровое портфолио и сообщество талантов USHQN' : 'USHQN Talent Platform & Digital Portfolio'}
+          </p>
         </div>
 
-        {/* 1. AI-Driven Career Diagnostic & Roadmap */}
-        {(activeTab === 'all' || activeTab === 'roadmap') && (
-          <CareerDiagnosticRadar />
-        )}
-
-        {/* 2. Verification & Anti-Fake QR Digital Passport Card */}
-        {(activeTab === 'all' || activeTab === 'passport') && (
-          <DigitalPassportCard onOpenModal={() => setIsPassportModalOpen(true)} />
-        )}
-
-        {/* 3. RPG Gamification (Level 1–50 & Streak механикасы) */}
-        {(activeTab === 'all' || activeTab === 'gamification') && (
-          <GamificationBanner />
-        )}
-
-        {/* 4. B2B University Direct Offer System */}
-        {(activeTab === 'all' || activeTab === 'grants') && (
-          <UniversityDirectOffers />
-        )}
-
-        {/* 5. Parent & School Dashboard */}
-        {(activeTab === 'all' || activeTab === 'parent') && (
-          <ParentTalentReport />
-        )}
-
-        {/* Quick stats row */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="flex items-center gap-2.5">
           <Link
             to="/achievements"
-            className="ushqn-card flex items-center gap-3 p-3.5 transition hover:border-slate-400"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg dark:bg-slate-800">
-              🏆
-            </span>
-            <div>
-              <p className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-                {statsQuery.data?.achCount ?? '8'}
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.achievements')}</p>
-            </div>
+            <PlusCircle className="h-4 w-4" />
+            <span>{isKz ? 'Жетістік қосу' : isRu ? 'Добавить достижение' : 'Add Achievement'}</span>
           </Link>
           <Link
-            to="/people"
-            className="ushqn-card flex items-center gap-3 p-3.5 transition hover:border-slate-400"
+            to="/profile"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg dark:bg-slate-800">
-              👥
-            </span>
-            <div>
-              <p className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-                {statsQuery.data?.followersCount ?? '24'}
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.followers')}</p>
-            </div>
+            <span>{isKz ? 'Профиль' : isRu ? 'Профиль' : 'Profile'}</span>
           </Link>
-          <Link
-            to="/chat"
-            className="ushqn-card flex items-center gap-3 p-3.5 transition hover:border-slate-400"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg dark:bg-slate-800">
-              💬
-            </span>
-            <div>
-              <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t('home.cards.chat.title')}</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.cards.chat.desc')}</p>
-            </div>
-          </Link>
-          <div className="ushqn-card flex items-center gap-3 p-3.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-lg dark:bg-amber-950/40">
-              🔥
-            </span>
-            <div>
-              <p className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-                {streakQuery.data?.activity_streak_count ?? 14}
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('home.streakDays')}</p>
-            </div>
-          </div>
         </div>
+      </div>
 
-        {/* Quick actions shortcuts */}
-        <div>
-          <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
-            {t('home.quickActionsLabel')}
+      {/* Real Metric Stat Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium">{isKz ? 'Ұпайлар' : isRu ? 'Баллы' : 'Total Points'}</span>
+            <Trophy className="h-4 w-4 text-amber-500" />
+          </div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {totalPoints}
+          </div>
+          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+            {isKz ? 'Категориялар бойынша' : isRu ? 'По категориям' : 'Across categories'}
           </p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {QUICK_ACTIONS.map((a) => (
-              <Link
-                key={a.to}
-                to={a.to}
-                className={`flex items-center gap-2 rounded-xl ${a.color} p-2.5 shadow-xs transition hover:scale-[1.01] active:scale-[0.99]`}
-              >
-                <span className="text-lg">{a.emoji}</span>
-                <span className="text-xs font-bold leading-tight">{a.label}</span>
-              </Link>
-            ))}
-          </div>
         </div>
 
-        {/* Recent achievements + events in 2-col on wider screens */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* Recent achievements */}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium">{isKz ? 'Жетістіктер' : isRu ? 'Достижения' : 'Achievements'}</span>
+            <Award className="h-4 w-4 text-blue-500" />
+          </div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {achCount}
+          </div>
+          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+            {isKz ? 'Портфолиодағы дипломдар' : isRu ? 'В вашем портфолио' : 'In your portfolio'}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium">{isKz ? 'Белсенділік' : isRu ? 'Активность' : 'Streak'}</span>
+            <Flame className="h-4 w-4 text-orange-500" />
+          </div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {streakCount} {isKz ? 'күн' : isRu ? 'дней' : 'days'}
+          </div>
+          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+            {isKz ? 'Үздіксіз кіру' : isRu ? 'Серия посещений' : 'Daily streak'}
+          </p>
+        </div>
+
+        <Link
+          to="/rating"
+          className="group rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+        >
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium">{isKz ? 'Рейтинг' : isRu ? 'Рейтинг' : 'Leaderboard'}</span>
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
+          </div>
+          <div className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-blue-600">
+            {isKz ? 'Тізімді ашу' : isRu ? 'Открыть топ' : 'View Top'}
+          </div>
+          <p className="mt-1 text-[11px] text-blue-600 dark:text-blue-400">
+            {isKz ? 'Барлық оқушылар арасында' : isRu ? 'Среди всех участников' : 'Among all members'} &rarr;
+          </p>
+        </Link>
+      </div>
+
+      {/* Main Grid Sections */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Achievements Section */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Award className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                {t('home.recentAchievements')}
+              </h2>
+            </div>
+            <Link
+              to="/achievements"
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+            >
+              {t('common.viewAll')}
+            </Link>
+          </div>
+
           {(recentAchievements.data ?? []).length > 0 ? (
-            <section className="ushqn-card p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  {t('home.recentAchievements')}
-                </h2>
-                <Link to="/achievements" className="text-xs font-bold text-[#0052cc] hover:underline">
-                  {t('common.viewAll')}
-                </Link>
-              </div>
-              <ul className="space-y-2">
-                {(recentAchievements.data ?? []).map((a) => (
-                  <li
-                    key={a.id}
-                    className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-800/40"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-200/80 text-sm dark:bg-slate-700">
-                      {CATEGORY_EMOJI[a.slug] ?? '🏅'}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">{a.title}</p>
-                      <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        +{a.points_awarded} {t('common.points')}
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {(recentAchievements.data ?? []).map((a) => (
+                <div key={a.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-lg">{CATEGORY_EMOJI[a.slug] ?? '🏅'}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-slate-800 dark:text-slate-200">
+                        {a.title}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {new Date(a.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+                  </div>
+                  <span className="shrink-0 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    +{a.points_awarded} {t('common.points')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {isKz ? 'Әзірге жетістіктер жоқ' : isRu ? 'Пока нет добавленных достижений' : 'No achievements added yet'}
+              </p>
+              <Link
+                to="/achievements"
+                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+              >
+                <span>{isKz ? 'Біріншісін қосу' : isRu ? 'Добавить первое' : 'Add your first'}</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          )}
+        </div>
 
-          {/* Upcoming events */}
+        {/* Upcoming Events Section */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                {t('home.upcomingEvents')}
+              </h2>
+            </div>
+            <Link
+              to="/calendar"
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+            >
+              {t('common.viewAll')}
+            </Link>
+          </div>
+
           {(upcomingEvents.data ?? []).length > 0 ? (
-            <section className="ushqn-card p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  {t('home.upcomingEvents')}
-                </h2>
-                <Link to="/calendar" className="text-xs font-bold text-[#0052cc] hover:underline">
-                  {t('common.viewAll')}
-                </Link>
-              </div>
-              <ul className="space-y-2">
-                {(upcomingEvents.data ?? []).map((e) => (
-                  <li
-                    key={e.id}
-                    className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-800/40"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-200/80 dark:bg-slate-700">
-                      <span className="text-[11px] font-black text-slate-900 dark:text-white">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {(upcomingEvents.data ?? []).map((e) => (
+                <div key={e.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
                         {new Date(e.starts_at).getDate()}
                       </span>
-                      <span className="text-[8px] font-bold uppercase text-slate-500 dark:text-slate-300">
+                      <span className="text-[9px] uppercase text-slate-500 dark:text-slate-400">
                         {new Date(e.starts_at).toLocaleString(undefined, { month: 'short' })}
                       </span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">{e.title}</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-slate-800 dark:text-slate-200">
+                        {e.title}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
                         {new Date(e.starts_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                         {e.is_online ? ` · ${t('calendar.online')}` : ''}
                       </p>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+                  </div>
+                  <Link
+                    to="/calendar"
+                    className="shrink-0 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  >
+                    &rarr;
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {isKz ? 'Жақын арада іс-шаралар жоқ' : isRu ? 'Нет предстоящих мероприятий' : 'No upcoming events'}
+              </p>
+              <Link
+                to="/calendar"
+                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+              >
+                <span>{isKz ? 'Күнтізбені қарау' : isRu ? 'Открыть календарь' : 'View Calendar'}</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Digital QR Passport Modal */}
-      {isPassportModalOpen && (
-        <DigitalPassportModal
-          userName={meQuery.data?.display_name || 'Әлішер Төлеубаев'}
-          onClose={() => setIsPassportModalOpen(false)}
-        />
-      )}
+      {/* Quick Navigation Cards */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Link
+          to="/jobs"
+          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+            <Briefcase className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-xs font-semibold text-slate-900 dark:text-white">
+              {isKz ? 'Мүмкіндіктер & Вакансиялар' : isRu ? 'Возможности & Вакансии' : 'Opportunities & Jobs'}
+            </h3>
+            <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+              {isKz ? 'Стажировкалар мен жобалар' : isRu ? 'Стажировки и проекты' : 'Internships & projects'}
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          to="/roadmap"
+          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+            <Compass className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-xs font-semibold text-slate-900 dark:text-white">
+              {isKz ? 'Бағыт & Roadmap' : isRu ? 'Профориентация & Roadmap' : 'Career & Roadmap'}
+            </h3>
+            <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+              {isKz ? 'Дағдылар картасы' : isRu ? 'Карта навыков' : 'Skills & path'}
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          to="/passport"
+          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-xs transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+            <ShieldCheck className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-xs font-semibold text-slate-900 dark:text-white">
+              {isKz ? 'Цифрлық ID Паспорт' : isRu ? 'Цифровой ID Паспорт' : 'Digital ID Passport'}
+            </h3>
+            <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+              {isKz ? 'QR код және верификация' : isRu ? 'QR код и верификация' : 'QR & credentials'}
+            </p>
+          </div>
+        </Link>
+      </div>
     </div>
   )
 }
