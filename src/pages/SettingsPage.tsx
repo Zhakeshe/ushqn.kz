@@ -13,6 +13,9 @@ import { useConfirm } from '../lib/confirm'
 import { getAppBaseUrl } from '../lib/siteUrl'
 import { trackEvent } from '../lib/analytics'
 import { AppPageMeta } from '../components/AppPageMeta'
+import { TelegramBotAssistant } from '../components/TelegramBotAssistant'
+import { ParentTeacherPortal } from '../components/ParentTeacherPortal'
+import { Send, Eye } from 'lucide-react'
 
 function trimOrNull(s: string | undefined | null): string | null {
   const x = (s ?? '').trim()
@@ -63,7 +66,7 @@ type PasswordForm = {
   confirm: string
 }
 
-type Section = 'profile' | 'invite' | 'appearance' | 'security' | 'notifications' | 'privacy' | 'language'
+type Section = 'profile' | 'telegram' | 'parent_portal' | 'invite' | 'appearance' | 'security' | 'notifications' | 'privacy' | 'language'
 
 type UserSettingsPatch = Partial<{
   notify_follows: boolean
@@ -86,6 +89,10 @@ function NavIcon({ name }: { name: Section }) {
           <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.468 7.126A5.985 5.985 0 0 1 8 13a5.985 5.985 0 0 1 5.468 2.126A8.959 8.959 0 0 0 8 15c-1.98 0-3.812.642-5.468 1.876Z" />
         </svg>
       )
+    case 'telegram':
+      return <Send className={c} />
+    case 'parent_portal':
+      return <Eye className={c} />
     case 'security':
       return (
         <svg className={c} viewBox="0 0 16 16" fill="currentColor" aria-hidden>
@@ -133,6 +140,7 @@ export function SettingsPage() {
   const { toast } = useToast()
   const { confirm } = useConfirm()
   const { t, i18n } = useTranslation()
+  const isKz = i18n.language === 'kk'
   const [section, setSection] = useState<Section>('profile')
   const [showPass, setShowPass] = useState(false)
   const [usernameInput, setUsernameInput] = useState('')
@@ -140,6 +148,8 @@ export function SettingsPage() {
 
   const SECTIONS: { id: Section; label: string; icon: ReactNode }[] = [
     { id: 'profile', label: t('settings.sections.profile'), icon: <NavIcon name="profile" /> },
+    { id: 'telegram', label: isKz ? 'Telegram Бот Интеграция' : 'Telegram Бот Интеграция', icon: <NavIcon name="telegram" /> },
+    { id: 'parent_portal', label: isKz ? 'Ата-ана & Мұғалім Порталы' : 'Портал Наблюдателя', icon: <NavIcon name="parent_portal" /> },
     { id: 'invite', label: t('settings.sections.invite'), icon: <NavIcon name="invite" /> },
     { id: 'appearance', label: t('settings.sections.appearance'), icon: <NavIcon name="appearance" /> },
     { id: 'security', label: t('settings.sections.security'), icon: <NavIcon name="security" /> },
@@ -401,6 +411,12 @@ export function SettingsPage() {
               </div>
             </form>
           ) : null}
+
+          {/* Telegram Bot */}
+          {section === 'telegram' ? <TelegramBotAssistant /> : null}
+
+          {/* Parent & Teacher Observer Portal */}
+          {section === 'parent_portal' ? <ParentTeacherPortal /> : null}
 
           {section === 'invite' && userId ? (
             <div className="space-y-3">

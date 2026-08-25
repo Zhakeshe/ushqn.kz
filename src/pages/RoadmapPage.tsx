@@ -3,6 +3,9 @@ import { CareerDiagnosticRadar } from '../components/CareerDiagnosticRadar'
 import { SmartRoadmapsV2 } from '../components/SmartRoadmapsV2'
 import { SocratesAiMentor } from '../components/SocratesAiMentor'
 import { DebateSpeechCoach } from '../components/DebateSpeechCoach'
+import { AiCoverLetterMatcher } from '../components/AiCoverLetterMatcher'
+import { ScientificPaperLatexStudio } from '../components/ScientificPaperLatexStudio'
+import { SkillVerificationSandbox } from '../components/SkillVerificationSandbox'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
 import { useTranslation } from 'react-i18next'
@@ -13,7 +16,9 @@ export function RoadmapPage() {
   const { i18n } = useTranslation()
   const isKz = i18n.language === 'kk'
   const isRu = i18n.language === 'ru'
-  const [activeTab, setActiveTab] = useState<'roadmaps_v2' | 'socrates_ai' | 'debate_coach' | 'radar'>('roadmaps_v2')
+  const [activeTab, setActiveTab] = useState<
+    'roadmaps_v2' | 'socrates_ai' | 'debate_coach' | 'cover_letter' | 'latex_studio' | 'radar' | 'skill_sandbox'
+  >('roadmaps_v2')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
@@ -59,8 +64,23 @@ export function RoadmapPage() {
             },
             {
               id: 'debate_coach',
-              labelKz: '🎙️ AI Дебат & Шешендік Коуч',
+              labelKz: '🎙️ AI Дебат & Шешендік',
               labelRu: '🎙️ AI Коуч по Дебатам',
+            },
+            {
+              id: 'cover_letter',
+              labelKz: '📝 AI Motivation Letter',
+              labelRu: '📝 AI Motivation Letter',
+            },
+            {
+              id: 'latex_studio',
+              labelKz: '📄 LaTeX Редактор',
+              labelRu: '📄 LaTeX Редактор',
+            },
+            {
+              id: 'skill_sandbox',
+              labelKz: '⚡ Skill Песочницасы',
+              labelRu: '⚡ Skill Песочница',
             },
             {
               id: 'radar',
@@ -71,8 +91,19 @@ export function RoadmapPage() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as 'roadmaps_v2' | 'socrates_ai' | 'debate_coach' | 'radar')}
-              className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
+              onClick={() =>
+                setActiveTab(
+                  tab.id as
+                    | 'roadmaps_v2'
+                    | 'socrates_ai'
+                    | 'debate_coach'
+                    | 'cover_letter'
+                    | 'latex_studio'
+                    | 'radar'
+                    | 'skill_sandbox'
+                )
+              }
+              className={`flex-1 min-w-[120px] rounded-lg py-2 text-xs font-bold transition ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
@@ -87,6 +118,9 @@ export function RoadmapPage() {
         {activeTab === 'roadmaps_v2' && <SmartRoadmapsV2 />}
         {activeTab === 'socrates_ai' && <SocratesAiMentor />}
         {activeTab === 'debate_coach' && <DebateSpeechCoach />}
+        {activeTab === 'cover_letter' && <AiCoverLetterMatcher />}
+        {activeTab === 'latex_studio' && <ScientificPaperLatexStudio />}
+        {activeTab === 'skill_sandbox' && <SkillVerificationSandbox />}
         {activeTab === 'radar' && <CareerDiagnosticRadar />}
       </div>
     </div>

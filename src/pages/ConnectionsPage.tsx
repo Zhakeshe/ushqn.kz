@@ -4,10 +4,12 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { QueryState } from '../components/QueryState'
+import { HackathonTeammateMatchmaker } from '../components/HackathonTeammateMatchmaker'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../lib/toast'
 import type { UserRole } from '../types/database'
+import { Users2, UserPlus } from 'lucide-react'
 
 type LinkRow = {
   id: string
@@ -47,10 +49,12 @@ type TeacherGroupMemberRow = {
 }
 
 export function ConnectionsPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isKz = i18n.language === 'kk'
   const { userId } = useAuth()
   const { toast } = useToast()
   const qc = useQueryClient()
+  const [activeTab, setActiveTab] = useState<'connections' | 'hackathon_match'>('connections')
   const [inviteCode, setInviteCode] = useState('')
   const [groupTitle, setGroupTitle] = useState('')
   const [groupKind, setGroupKind] = useState<GroupKind>('club')
@@ -416,7 +420,39 @@ export function ConnectionsPage() {
         <p className="mt-1 text-sm text-[var(--color-ushqn-muted)]">{t('connections.subtitle')}</p>
       </div>
 
-      <QueryState query={roleQuery} skeleton={<div className="ushqn-card h-24 animate-pulse" />}>
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setActiveTab('connections')}
+          className={`flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold transition ${
+            activeTab === 'connections'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+          }`}
+        >
+          <UserPlus className="h-4 w-4" />
+          <span>{isKz ? '👥 Байланыстар & Сыныптар' : '👥 Связи и Классы'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('hackathon_match')}
+          className={`flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold transition ${
+            activeTab === 'hackathon_match'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Users2 className="h-4 w-4" />
+          <span>{isKz ? '🚀 Хакатон Командасын Жинау' : '🚀 Подбор Команды на Хакатон'}</span>
+        </button>
+      </div>
+
+      {activeTab === 'hackathon_match' ? (
+        <HackathonTeammateMatchmaker />
+      ) : (
+        <QueryState query={roleQuery} skeleton={<div className="ushqn-card h-24 animate-pulse" />}>
         {isParent || isTeacher ? (
           <section className="ushqn-card space-y-4 p-5">
             <h2 className="text-sm font-extrabold text-[var(--color-ushqn-text)]">{t('connections.acceptSection')}</h2>
@@ -825,6 +861,7 @@ export function ConnectionsPage() {
           </QueryState>
         )}
       </QueryState>
+      )}
     </div>
   )
 }

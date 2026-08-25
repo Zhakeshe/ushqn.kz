@@ -1,28 +1,34 @@
 import { GamificationBanner } from '../components/GamificationBanner'
 import { OlympiadBattleHub } from '../components/OlympiadBattleHub'
 import { P2PStudyRoom } from '../components/P2PStudyRoom'
+import { DailyMathStreak } from '../components/DailyMathStreak'
+import { OlympiadSimulationArena } from '../components/OlympiadSimulationArena'
+import { PeerCodeReviewHub } from '../components/PeerCodeReviewHub'
+import { StemFlashcardsDecks } from '../components/StemFlashcardsDecks'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Swords, Trophy, Users } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 
 export function GamificationPage() {
   const { i18n } = useTranslation()
   const isKz = i18n.language === 'kk'
   const isRu = i18n.language === 'ru'
-  const [activeTab, setActiveTab] = useState<'battles' | 'p2p_study' | 'rpg_progression'>('battles')
+  const [activeTab, setActiveTab] = useState<
+    'daily_math' | 'mock_contest' | 'battles' | 'peer_review' | 'flashcards' | 'p2p_study' | 'rpg_progression'
+  >('daily_math')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
       <AppPageMeta
         title={
           isKz
-            ? 'Олимпиадалық Баттлдар & P2P Study Rooms'
+            ? 'Олимпиадалық Баттлдар & Ойын Әлемі'
             : isRu
-            ? 'Олимпиадные Баттлы & P2P Коворкинг'
-            : 'Olympiad Battles & P2P Study'
+            ? 'Олимпиадные Баттлы & Геймификация'
+            : 'Olympiad Battles & Gamification'
         }
       />
 
@@ -44,48 +50,47 @@ export function GamificationPage() {
         </div>
 
         {/* Tab Toggle */}
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab('battles')}
-            className={`flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition ${
-              activeTab === 'battles'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Swords className="h-4 w-4 text-amber-400" />
-            <span>{isKz ? '🏆 Олимпиадалық Баттлдар' : '🏆 Олимпиадные Баттлы'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('p2p_study')}
-            className={`flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition ${
-              activeTab === 'p2p_study'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Users className="h-4 w-4 text-emerald-400" />
-            <span>{isKz ? '👥 P2P Study & Pomodoro' : '👥 P2P Study & Pomodoro'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('rpg_progression')}
-            className={`flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition ${
-              activeTab === 'rpg_progression'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Trophy className="h-4 w-4 text-amber-300" />
-            <span>{isKz ? '🎮 RPG Прогресс & Бейдждер' : '🎮 RPG Прогресс & Бейджи'}</span>
-          </button>
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+          {[
+            { id: 'daily_math', labelKz: '🔥 Күнделікті Стрик', labelRu: '🔥 Дневной Стрик' },
+            { id: 'mock_contest', labelKz: '🏆 Олимпиада Симуляторы', labelRu: '🏆 Симулятор IZhO' },
+            { id: 'battles', labelKz: '⚔️ Олимпиада Баттлы', labelRu: '⚔️ Олимпиадные Баттлы' },
+            { id: 'peer_review', labelKz: '💬 Peer Code Review', labelRu: '💬 Peer Code Review' },
+            { id: 'flashcards', labelKz: '🧠 STEM Flashcards', labelRu: '🧠 STEM Флешкарты' },
+            { id: 'p2p_study', labelKz: '👥 P2P Study Room', labelRu: '👥 P2P Study Room' },
+            { id: 'rpg_progression', labelKz: '🎮 RPG Прогресс', labelRu: '🎮 RPG Прогресс' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() =>
+                setActiveTab(
+                  tab.id as
+                    | 'battles'
+                    | 'rpg_progression'
+                    | 'p2p_study'
+                    | 'daily_math'
+                    | 'mock_contest'
+                    | 'peer_review'
+                    | 'flashcards'
+                )
+              }
+              className={`flex-1 min-w-[120px] rounded-lg py-2 text-xs font-bold transition ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              {isKz ? tab.labelKz : tab.labelRu}
+            </button>
+          ))}
         </div>
 
+        {activeTab === 'daily_math' && <DailyMathStreak />}
+        {activeTab === 'mock_contest' && <OlympiadSimulationArena />}
         {activeTab === 'battles' && <OlympiadBattleHub />}
+        {activeTab === 'peer_review' && <PeerCodeReviewHub />}
+        {activeTab === 'flashcards' && <StemFlashcardsDecks />}
         {activeTab === 'p2p_study' && <P2PStudyRoom />}
         {activeTab === 'rpg_progression' && <GamificationBanner />}
       </div>
