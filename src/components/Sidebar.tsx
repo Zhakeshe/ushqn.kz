@@ -173,7 +173,7 @@ export function Sidebar() {
     { to: '/gamification', icon: ISwords, label: isKz ? 'Баттлдар & RPG' : isRu ? 'Баттлы & RPG' : 'Battles & RPG' },
     { to: '/roadmap', icon: ICompass, label: isKz ? 'Roadmap & AI Mentor' : isRu ? 'Roadmap & AI Ментор' : 'Roadmap & AI Mentor' },
     { to: '/grants', icon: IGrad, label: isKz ? 'Гранттар & Mentors' : isRu ? 'Гранты & Mentors' : 'Grants & Mentors' },
-    { to: '/passport', icon: IQr, label: isKz ? 'Wallet & QR Паспорт' : isRu ? 'Wallet & QR Паспорт' : 'Wallet & QR Pass' },
+    { to: '/passport', icon: IQr, label: isKz ? 'Визитка & QR Паспорт' : isRu ? 'Визитка & QR Паспорт' : 'Business Card & QR' },
     { to: '/rating', icon: IRating, label: t('nav.rating') },
     { to: '/calendar', icon: ICalendar, label: t('nav.calendar') },
     { to: '/jobs', icon: IJobs, label: t('nav.jobs') },

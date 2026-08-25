@@ -197,7 +197,7 @@ export function HomePage() {
               to="/passport"
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             >
-              <span>QR ID</span>
+              <span>🪪 {isKz ? 'Цифрлық Визитка' : isRu ? 'Визитка & QR' : 'Business Card'}</span>
             </Link>
           </div>
 

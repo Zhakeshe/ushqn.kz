@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DigitalPassportCard, DigitalPassportModal } from '../components/DigitalPassportModal'
 import { DigitalWalletAndNftCard } from '../components/DigitalWalletAndNftCard'
+import { DigitalBusinessCardStudio } from '../components/DigitalBusinessCardStudio'
 import { QrOrganizerScannerModal } from '../components/QrOrganizerScannerModal'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
@@ -14,11 +15,11 @@ export function PassportPage() {
   const isRu = i18n.language === 'ru'
   const [modalOpen, setModalOpen] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
-  const [activeView, setActiveView] = useState<'standard' | 'wallet_nft'>('wallet_nft')
+  const [activeView, setActiveView] = useState<'business_card' | 'wallet_nft' | 'standard'>('business_card')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
-      <AppPageMeta title={isKz ? 'QR Цифрлық Паспорт & Wallet' : isRu ? 'QR Паспорт и Wallet' : 'QR Digital Passport & Wallet'} />
+      <AppPageMeta title={isKz ? 'Цифрлық Визитка & QR Паспорт' : isRu ? 'Цифровая Визитка и QR Паспорт' : 'Digital Business Card & QR Pass'} />
 
       <aside className="hidden lg:block">
         <div className="sticky top-6 space-y-4">
@@ -49,36 +50,45 @@ export function PassportPage() {
         </div>
 
         {/* View Switcher */}
-        <div className="flex rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
+          <button
+            type="button"
+            onClick={() => setActiveView('business_card')}
+            className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
+              activeView === 'business_card'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            🪪 {isKz ? 'Интерактивті Визитка & CRM' : 'Интерактивная Визитка и CRM'}
+          </button>
           <button
             type="button"
             onClick={() => setActiveView('wallet_nft')}
-            className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+            className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
               activeView === 'wallet_nft'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            📱 Apple / Google Wallet & Polygon NFT
+            📱 Apple / Google Wallet
           </button>
           <button
             type="button"
             onClick={() => setActiveView('standard')}
-            className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+            className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
               activeView === 'standard'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            🪪 {isKz ? 'Стандартты QR Паспорт' : 'Стандартный QR Паспорт'}
+            🛡️ {isKz ? 'Ресми QR Паспорт' : 'Официальный QR Паспорт'}
           </button>
         </div>
 
-        {activeView === 'wallet_nft' ? (
-          <DigitalWalletAndNftCard />
-        ) : (
-          <DigitalPassportCard onOpenModal={() => setModalOpen(true)} />
-        )}
+        {activeView === 'business_card' && <DigitalBusinessCardStudio />}
+        {activeView === 'wallet_nft' && <DigitalWalletAndNftCard />}
+        {activeView === 'standard' && <DigitalPassportCard onOpenModal={() => setModalOpen(true)} />}
 
         {modalOpen && <DigitalPassportModal onClose={() => setModalOpen(false)} />}
         {scannerOpen && <QrOrganizerScannerModal onClose={() => setScannerOpen(false)} />}
