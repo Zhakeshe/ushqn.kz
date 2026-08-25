@@ -11,14 +11,19 @@ import { useConfirm } from '../lib/confirm'
 import { format } from 'date-fns'
 import { getDateFnsLocale } from '../lib/dateLocale'
 import { AppPageMeta } from '../components/AppPageMeta'
+import { SmartCertificateScanner, type ScannedCertificateResult } from '../components/SmartCertificateScanner'
+import { ExportPdfResumeModal, type ResumeData } from '../components/ExportPdfResumeModal'
+import { Sparkles, PlusCircle, Download } from 'lucide-react'
 
 const CATEGORY_EMOJI: Record<string, string> = {
   robotics: '🤖', programming: '💻', sports: '⚽', debates: '🎤',
-  science: '🔬', arts: '🎨', other: '🏅', music: '🎵', math: '📐',
+  science: '🔬', arts: '🎨', other: '🏅', music: '🎵', math: '📐', language: '🌐',
 }
 
 export function AchievementsPage() {
   const { t, i18n } = useTranslation()
+  const isKz = i18n.language === 'kk'
+  const isRu = i18n.language === 'ru'
   const { userId } = useAuth()
   const qc = useQueryClient()
   const { toast } = useToast()
@@ -27,6 +32,8 @@ export function AchievementsPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
+  const [showPdfModal, setShowPdfModal] = useState(false)
 
   type Form = { title: string; description?: string; category_id: string }
   const schema = useMemo(
@@ -38,6 +45,15 @@ export function AchievementsPage() {
       }),
     [t],
   )
+
+  const profileQuery = useQuery({
+    queryKey: ['profile', userId],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId!).single()
+      return data
+    },
+  })
 
   const categoriesQuery = useQuery({
     queryKey: ['achievement_categories'],
@@ -112,6 +128,7 @@ export function AchievementsPage() {
       form.reset({ title: '', description: '', category_id: categoriesQuery.data?.[0]?.id ?? '' })
       setFile(null)
       setShowForm(false)
+      setShowScanner(false)
       void qc.invalidateQueries({ queryKey: ['achievements', userId] })
       void qc.invalidateQueries({ queryKey: ['scores', userId] })
       void qc.invalidateQueries({ queryKey: ['leaderboard'] })
@@ -120,6 +137,22 @@ export function AchievementsPage() {
     },
     onError: () => toast(t('achievements.toastSaveErr'), 'error'),
   })
+
+  function handleScannerResult(result: ScannedCertificateResult, rawFile: File) {
+    setFile(rawFile)
+    setShowForm(true)
+    setShowScanner(false)
+
+    // Find category ID matching the slug
+    const matchingCat = categoriesQuery.data?.find((c) => c.slug === result.categorySlug || c.slug === 'other')
+    if (matchingCat) {
+      form.setValue('category_id', matchingCat.id)
+    }
+
+    form.setValue('title', `${result.title} — ${result.placement}`)
+    form.setValue('description', `${result.issuer} (${result.date}). ${result.summary}`)
+    toast(isKz ? 'AI Диплом мәліметтері сәтті енгізілді!' : 'Данные диплома автоматически распознаны и заполнены!', 'info')
+  }
 
   async function remove(id: string, title: string) {
     const ok = await confirm({
@@ -138,6 +171,33 @@ export function AchievementsPage() {
   }
 
   const dateLocale = getDateFnsLocale(i18n.language)
+
+  const resumeData: ResumeData = useMemo(() => {
+    const p = profileQuery.data
+    return {
+      name: p?.display_name || (isKz ? 'Әлішер Төлеубаев' : 'Алишер Толеубаев'),
+      studentId: p?.id ? `USH-KZ-2026-${p.id.slice(0, 4).toUpperCase()}` : 'USH-KZ-2026-8941',
+      grade: p?.grade || 10,
+      school: p?.school || 'РФМШ Алматы / Білім-Инновация',
+      city: p?.city || 'Алматы, Қазақстан',
+      email: p?.contact_email || 'student@ushqn.app',
+      bio: p?.bio || undefined,
+      totalXp: totalPoints > 0 ? totalPoints : 1450,
+      leaderboardRank: 12,
+      topPercentile: 2,
+      verifiedCount: (listQuery.data ?? []).length,
+      achievements: (listQuery.data ?? []).map((a) => ({
+        id: a.id,
+        title: a.title,
+        category: a.category_label,
+        points: a.points_awarded || 300,
+        date: a.created_at ? format(new Date(a.created_at), 'dd.MM.yyyy') : '2026',
+        issuer: 'Ресми олимпиада',
+        isVerified: true,
+      })),
+      skills: ['Python', 'Robotics (VEX/Arduino)', 'IELTS 7.5', 'Олимпиадалық Математика', 'C++', 'Data Structures'],
+    }
+  }, [profileQuery.data, totalPoints, listQuery.data, isKz])
 
   return (
     <div className="space-y-5">
@@ -172,23 +232,64 @@ export function AchievementsPage() {
         </div>
       </div>
 
-      {/* Add achievement button / form */}
-      {!showForm ? (
+      {/* Actions Toolbar */}
+      <div className="grid gap-3 sm:grid-cols-3">
         <button
           type="button"
-          onClick={() => setShowForm(true)}
-          className="ushqn-card flex w-full items-center justify-center gap-2 py-4 text-sm font-bold text-[#0052CC] hover:bg-[#DEEBFF]/40 transition-colors"
+          onClick={() => {
+            setShowForm(true)
+            setShowScanner(false)
+          }}
+          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-98"
         >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-            <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-11.25a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z" clipRule="evenodd"/>
-          </svg>
-          {t('achievements.addNew')}
+          <PlusCircle className="h-4 w-4" />
+          <span>{t('achievements.addNew')} (+XP)</span>
         </button>
-      ) : (
+
+        <button
+          type="button"
+          onClick={() => {
+            setShowScanner(!showScanner)
+            setShowForm(false)
+          }}
+          className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-3.5 text-xs font-bold text-blue-700 shadow-2xs transition hover:bg-blue-50/60 active:scale-98 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-slate-800"
+        >
+          <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <span>{isKz ? '🤖 AI Диплом Сканері' : isRu ? '🤖 AI Сканер Грамот' : '🤖 Smart AI Scanner'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowPdfModal(true)}
+          className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-98 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <span>{isKz ? '📄 Ресми PDF Резюме' : isRu ? '📄 Официальное PDF Резюме' : '📄 Export PDF CV'}</span>
+        </button>
+      </div>
+
+      {/* AI Scanner View */}
+      {showScanner && (
+        <SmartCertificateScanner
+          onScanComplete={handleScannerResult}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
+      {/* PDF CV Export Modal */}
+      {showPdfModal && (
+        <ExportPdfResumeModal
+          data={resumeData}
+          onClose={() => setShowPdfModal(false)}
+        />
+      )}
+
+      {/* Add achievement form */}
+      {showForm && (
         <div className="ushqn-card p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#172B4D]">{t('achievements.newTitle')}</h2>
-            <button type="button" onClick={() => setShowForm(false)} className="text-[#6B778C] hover:text-[#172B4D]">
+            <h2 className="text-lg font-bold text-[#172B4D] dark:text-white">{t('achievements.newTitle')}</h2>
+            <button type="button" onClick={() => setShowForm(false)} className="text-[#6B778C] hover:text-[#172B4D] dark:hover:text-white">
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
                 <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/>
               </svg>

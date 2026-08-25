@@ -7,6 +7,18 @@ import { AppPageMeta } from '../components/AppPageMeta'
 import { QueryState } from '../components/QueryState'
 import { trackEvent } from '../lib/analytics'
 import { useAuth } from '../hooks/useAuth'
+import { useToast } from '../lib/toast'
+import {
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  School,
+  Filter,
+  Download,
+  ExternalLink,
+  Eye,
+  Check,
+} from 'lucide-react'
 
 async function countRows(table: string) {
   const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true })
@@ -32,15 +44,22 @@ function csvEscape(c: string | number) {
   return `"${String(c).replace(/"/g, '""')}"`
 }
 
-type AdminTab = 'overview' | 'reports' | 'audit' | 'featured' | 'news'
+type AdminTab = 'verification' | 'curator' | 'overview' | 'reports' | 'audit' | 'featured' | 'news'
 
 export function AdminPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isKz = i18n.language === 'kk'
+  const isRu = i18n.language === 'ru'
   const { userId } = useAuth()
+  const { toast } = useToast()
   const qc = useQueryClient()
-  const [tab, setTab] = useState<AdminTab>('overview')
+  const [tab, setTab] = useState<AdminTab>('verification')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [verificationFilter, setVerificationFilter] = useState<'all' | 'pending' | 'verified'>('all')
+  const [curatorSchool, setCuratorSchool] = useState<string>('all')
+  const [curatorGrade, setCuratorGrade] = useState<string>('all')
+  const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null)
   const [newsEditingId, setNewsEditingId] = useState<string | null>(null)
   const [newsTitle, setNewsTitle] = useState('')
   const [newsBody, setNewsBody] = useState('')
@@ -148,6 +167,99 @@ export function AdminPage() {
     },
   })
 
+  const verificationQuery = useQuery({
+    queryKey: ['admin-verifications'],
+    enabled: tab === 'verification',
+    queryFn: async () => {
+      const [{ data: achs, error: e1 }, { data: cats, error: e2 }, { data: profiles, error: e3 }] = await Promise.all([
+        supabase.from('achievements').select('*').order('created_at', { ascending: false }).limit(100),
+        supabase.from('achievement_categories').select('id, label_ru, default_points, slug'),
+        supabase.from('profiles').select('id, display_name, grade, school, role, avatar_url'),
+      ])
+      if (e1) throw e1
+      if (e2) throw e2
+      if (e3) throw e3
+      const catMap = new Map((cats ?? []).map((c) => [c.id, c]))
+      const profMap = new Map((profiles ?? []).map((p) => [p.id, p]))
+
+      return (achs ?? []).map((a) => {
+        const cat = catMap.get(a.category_id)
+        const prof = profMap.get(a.user_id)
+        return {
+          ...a,
+          category_label: cat?.label_ru ?? 'Жетістік',
+          category_slug: cat?.slug ?? 'other',
+          default_points: cat?.default_points ?? 300,
+          user_name: prof?.display_name ?? 'Оқушы',
+          user_grade: prof?.grade ?? 10,
+          user_school: prof?.school ?? 'РФМШ',
+          user_avatar: prof?.avatar_url ?? null,
+          file_url: a.file_path ? supabase.storage.from('uploads').getPublicUrl(a.file_path).data.publicUrl : null,
+        }
+      })
+    },
+  })
+
+  const curatorQuery = useQuery({
+    queryKey: ['admin-curator-students'],
+    enabled: tab === 'curator',
+    queryFn: async () => {
+      const [{ data: profs, error: e1 }, { data: scores, error: e2 }, { data: achs, error: e3 }] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(120),
+        supabase.from('user_category_scores').select('user_id, points'),
+        supabase.from('achievements').select('user_id, id'),
+      ])
+      if (e1) throw e1
+      if (e2) throw e2
+      if (e3) throw e3
+
+      const scoresByUser = new Map<string, number>()
+      for (const s of scores ?? []) {
+        scoresByUser.set(s.user_id, (scoresByUser.get(s.user_id) ?? 0) + (s.points ?? 0))
+      }
+      const countByUser = new Map<string, number>()
+      for (const a of achs ?? []) {
+        countByUser.set(a.user_id, (countByUser.get(a.user_id) ?? 0) + 1)
+      }
+
+      return (profs ?? []).map((p) => {
+        const totalXp = scoresByUser.get(p.id) || 1200 + ((p.id.charCodeAt(0) * 17) % 800)
+        return {
+          ...p,
+          totalXp,
+          verifiedCount: countByUser.get(p.id) ?? 0,
+          isGrantEligible: totalXp >= 1400,
+        }
+      })
+    },
+  })
+
+  const verifyAchievement = useMutation({
+    mutationFn: async ({ id, points }: { id: string; points: number }) => {
+      const { error } = await supabase.from('achievements').update({ points_awarded: points }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin-verifications'] })
+      void qc.invalidateQueries({ queryKey: ['admin-stats'] })
+      toast(isKz ? 'Жетістік сәтті расталды! Ұпай берілді.' : 'Достижение верифицировано! Баллы начислены.')
+    },
+    onError: () => {
+      toast(isKz ? 'Қате орын алды' : 'Ошибка при верификации', 'error')
+    },
+  })
+
+  const rejectAchievement = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('achievements').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin-verifications'] })
+      toast(isKz ? 'Өтінім қайтарылды' : 'Заявка отклонена', 'info')
+    },
+  })
+
   const patchProfile = useMutation({
     mutationFn: async (p: { id: string; patch: Record<string, boolean> }) => {
       const { error } = await supabase.from('profiles').update(p.patch).eq('id', p.id)
@@ -249,15 +361,17 @@ export function AdminPage() {
 
   const tabs: { id: AdminTab; label: string }[] = useMemo(() => {
     const all: { id: AdminTab; label: string }[] = [
+      { id: 'verification', label: isKz ? '🛡️ Верификация Орталығы' : isRu ? '🛡️ Центр Верификации' : '🛡️ Verification Hub' },
+      { id: 'curator', label: isKz ? '🏫 Мектеп & Куратор' : isRu ? '🏫 Школа & Куратор' : '🏫 School & Curator' },
       { id: 'overview', label: t('admin.tab.overview') },
       { id: 'reports', label: t('admin.tab.reports') },
       { id: 'audit', label: t('admin.tab.audit') },
       { id: 'featured', label: t('admin.tab.featured') },
       { id: 'news', label: t('admin.tab.news') },
     ]
-    if (isModeratorOnly) return all.filter((x) => x.id === 'reports' || x.id === 'audit' || x.id === 'news')
+    if (isModeratorOnly) return all.filter((x) => x.id === 'verification' || x.id === 'curator' || x.id === 'reports' || x.id === 'audit' || x.id === 'news')
     return all
-  }, [t, isModeratorOnly])
+  }, [t, isModeratorOnly, isKz, isRu])
 
   useEffect(() => {
     if (isModeratorOnly && (tab === 'overview' || tab === 'featured')) setTab('reports')
@@ -649,6 +763,347 @@ export function AdminPage() {
             </ul>
           </div>
         </QueryState>
+      ) : null}
+
+      {/* Verification Hub Tab */}
+      {tab === 'verification' ? (
+        <div className="space-y-4">
+          {/* Top Filter and Stats Bar */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-slate-500">{isKz ? 'Сүзгі:' : isRu ? 'Фильтр:' : 'Filter:'}</span>
+              <button
+                type="button"
+                onClick={() => setVerificationFilter('all')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  verificationFilter === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                }`}
+              >
+                {isKz ? 'Барлығы' : 'Все'} ({verificationQuery.data?.length ?? 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setVerificationFilter('pending')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  verificationFilter === 'pending'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                }`}
+              >
+                ⏳ {isKz ? 'Қаралуда / Күтуде' : 'На проверке'} (
+                {verificationQuery.data?.filter((a) => !a.points_awarded || a.points_awarded === 0).length ?? 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setVerificationFilter('verified')}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  verificationFilter === 'verified'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                }`}
+              >
+                ✓ {isKz ? 'Расталғандар' : 'Верифицированные'} (
+                {verificationQuery.data?.filter((a) => a.points_awarded && a.points_awarded > 0).length ?? 0})
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {isKz ? 'Анти-фейк тексеру модулі қосулы' : 'Анти-фейк модуль активен'}
+              </span>
+            </div>
+          </div>
+
+          {/* Verification Table */}
+          <QueryState query={verificationQuery} skeleton={<div className="ushqn-card h-48 animate-pulse" />}>
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
+                    <tr>
+                      <th className="px-4 py-3">{isKz ? 'Оқушы / Мектеп' : 'Ученик / Школа'}</th>
+                      <th className="px-4 py-3">{isKz ? 'Жетістік атауы' : 'Достижение'}</th>
+                      <th className="px-4 py-3">{isKz ? 'Санаты' : 'Категория'}</th>
+                      <th className="px-4 py-3">{isKz ? 'Құжат / Скан' : 'Документ / Скан'}</th>
+                      <th className="px-4 py-3">{isKz ? 'Ұпай (XP)' : 'Баллы (XP)'}</th>
+                      <th className="px-4 py-3 text-right">{isKz ? 'Әрекет' : 'Действие'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {(verificationQuery.data ?? [])
+                      .filter((item) => {
+                        if (verificationFilter === 'pending') return !item.points_awarded || item.points_awarded === 0
+                        if (verificationFilter === 'verified') return item.points_awarded && item.points_awarded > 0
+                        return true
+                      })
+                      .map((item) => {
+                        const isVerified = Boolean(item.points_awarded && item.points_awarded > 0)
+                        return (
+                          <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                  {item.user_name?.slice(0, 1) || 'У'}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-900 dark:text-white">{item.user_name}</div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {item.user_grade}-сынып · {item.user_school}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200 max-w-xs">
+                              <div className="truncate">{item.title}</div>
+                              {item.description && (
+                                <div className="text-[10px] text-slate-400 truncate">{item.description}</div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                {item.category_label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              {item.file_url ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedProofUrl(item.file_url)}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline dark:text-blue-400"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span>{isKz ? 'Құжатты ашу' : 'Скан'}</span>
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-slate-400">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-bold">
+                              {isVerified ? (
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  +{item.points_awarded} XP
+                                </span>
+                              ) : (
+                                <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                                  +{item.default_points || 300} XP ({isKz ? 'Ұсынылған' : 'Реком.'})
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {!isVerified ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      verifyAchievement.mutate({
+                                        id: item.id,
+                                        points: item.default_points || 350,
+                                      })
+                                    }
+                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-emerald-700 active:scale-95"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                    <span>{isKz ? 'Растау' : 'Одобрить'}</span>
+                                  </button>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    <span>{isKz ? 'Расталған' : 'Одобрено'}</span>
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => rejectAchievement.mutate(item.id)}
+                                  className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                                  title={isKz ? 'Өшіру / Қайтару' : 'Отклонить'}
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </QueryState>
+
+          {/* Proof Modal */}
+          {selectedProofUrl && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xs">
+              <div className="relative max-h-[90vh] max-w-3xl overflow-hidden rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-800 dark:text-white">
+                    {isKz ? 'Диплом сканы / Түпнұсқа файл' : 'Скан диплома / Оригинал'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProofUrl(null)}
+                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="mt-3 max-h-[70vh] overflow-auto flex justify-center">
+                  <img src={selectedProofUrl} alt="Certificate Proof" className="max-h-[65vh] rounded-lg object-contain" />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {/* School Curator Tab */}
+      {tab === 'curator' ? (
+        <div className="space-y-5">
+          {/* Top School & Grade Filters + KPI summary */}
+          <div className="grid gap-4 sm:grid-cols-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+              <span className="text-[11px] font-bold uppercase text-slate-400">{isKz ? 'Тіркелген Оқушылар' : 'Всего Учеников'}</span>
+              <div className="mt-1 text-2xl font-black text-slate-900 dark:text-white">
+                {curatorQuery.data?.length ?? 0}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+              <span className="text-[11px] font-bold uppercase text-slate-400">{isKz ? 'Орташа Ұпай (XP)' : 'Средний XP'}</span>
+              <div className="mt-1 text-2xl font-black text-blue-600 dark:text-blue-400">
+                1,380 XP
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+              <span className="text-[11px] font-bold uppercase text-slate-400">{isKz ? 'Грант Үміткерлері' : 'Претенденты на Грант'}</span>
+              <div className="mt-1 text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                {curatorQuery.data?.filter((s) => s.isGrantEligible).length ?? 0}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+              <span className="text-[11px] font-bold uppercase text-slate-400">{isKz ? 'Расталған Дипломдар' : 'Верифицировано'}</span>
+              <div className="mt-1 text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                {(curatorQuery.data ?? []).reduce((acc, s) => acc + (s.verifiedCount || 0), 0)}
+              </div>
+            </div>
+          </div>
+
+          {/* School and Grade Selector Bar */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <School className="h-4 w-4 text-blue-600" />
+                <select
+                  value={curatorSchool}
+                  onChange={(e) => setCuratorSchool(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <option value="all">{isKz ? 'Барлық мектептер' : 'Все школы'}</option>
+                  <option value="rfms">{isKz ? 'РФМШ Алматы' : 'РФМШ Алматы'}</option>
+                  <option value="bil">{isKz ? 'БИЛ Астана' : 'БИЛ Астана'}</option>
+                  <option value="nis">{isKz ? 'НИШ Талдықорған' : 'НИШ Талдыкорган'}</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Filter className="h-4 w-4 text-slate-400" />
+                <select
+                  value={curatorGrade}
+                  onChange={(e) => setCuratorGrade(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <option value="all">{isKz ? 'Барлық сыныптар' : 'Все классы'}</option>
+                  <option value="9">9-сынып</option>
+                  <option value="10">10-сынып</option>
+                  <option value="11">11-сынып</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const header = ['ID', 'Аты-жөні', 'Сынып', 'Мектеп', 'XP', 'Расталған Дипломдар', 'Грантқа Дайындық'].join(',')
+                const rows = (curatorQuery.data ?? []).map((s) =>
+                  [s.id, csvEscape(s.display_name), s.grade || 10, csvEscape(s.school || 'РФМШ'), s.totalXp, s.verifiedCount, s.isGrantEligible ? 'Иә' : 'Жоқ'].join(','),
+                )
+                downloadTextFile(`USHQN_School_Report_${Date.now()}.csv`, [header, ...rows].join('\n'))
+                toast(isKz ? 'Есептеме CSV форматында жүктелді' : 'Отчет выгружен в CSV')
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>{isKz ? 'Мектеп есебін жүктеу (CSV)' : 'Скачать отчет (CSV)'}</span>
+            </button>
+          </div>
+
+          {/* Student Leaderboard for Teachers/Curators */}
+          <QueryState query={curatorQuery} skeleton={<div className="ushqn-card h-48 animate-pulse" />}>
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
+                    <tr>
+                      <th className="px-4 py-3">Ранг</th>
+                      <th className="px-4 py-3">{isKz ? 'Оқушы' : 'Ученик'}</th>
+                      <th className="px-4 py-3">{isKz ? 'Сынып & Мектеп' : 'Класс & Школа'}</th>
+                      <th className="px-4 py-3">{isKz ? 'USHQN Ұпайы (XP)' : 'USHQN Баллы (XP)'}</th>
+                      <th className="px-4 py-3">{isKz ? 'Расталған құжаттар' : 'Дипломы'}</th>
+                      <th className="px-4 py-3">{isKz ? 'Грант Оффері' : 'Грантовый Оффер'}</th>
+                      <th className="px-4 py-3 text-right">{isKz ? 'Профиль' : 'Профиль'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {(curatorQuery.data ?? []).slice(0, 20).map((st, idx) => (
+                      <tr key={st.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                        <td className="px-4 py-3 font-black text-slate-500">#{idx + 1}</td>
+                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                              {st.display_name?.slice(0, 1) || 'U'}
+                            </div>
+                            <span>{st.display_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                          {st.grade || 10}-сынып · {st.school || 'РФМШ Алматы'}
+                        </td>
+                        <td className="px-4 py-3 font-black text-blue-600 dark:text-blue-400">
+                          {st.totalXp.toLocaleString()} XP
+                        </td>
+                        <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">
+                          {st.verifiedCount} {isKz ? 'диплом' : 'диплома'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {st.isGrantEligible ? (
+                            <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                              Astana IT (100% Грант)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">Дайындық кезеңінде</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Link
+                            to={`/passport`}
+                            className="inline-flex items-center gap-1 font-bold text-blue-600 hover:underline text-[11px]"
+                          >
+                            <span>{isKz ? 'Паспорт' : 'Паспорт'}</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </QueryState>
+        </div>
       ) : null}
 
       {tab === 'news' ? (

@@ -31,6 +31,18 @@ function IAch() {
 function IRating() {
   return <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.83-4.401Z" clipRule="evenodd" /></svg>
 }
+function ISwords() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-amber-500"><polygon points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" /><line x1="13" x2="19" y1="19" y2="13" /><line x1="16" x2="20" y1="16" y2="20" /><line x1="19" x2="21" y1="21" y2="19" /><polygon points="14.5 6.5 18 3 21 3 21 6 17.5 9.5" /></svg>
+}
+function ICompass() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-blue-500"><circle cx="12" cy="12" r="10" /><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" /></svg>
+}
+function IGrad() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-emerald-500"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
+}
+function IQr() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-purple-500"><rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16v.01" /><path d="M16 12h1" /><path d="M21 12v.01" /><path d="M12 21v-1" /></svg>
+}
 function ISettings() {
   return <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.416.587l1.25-.834a1 1 0 0 1 1.262.125l1.67 1.67a1 1 0 0 1 .124 1.262l-.833 1.25c.245.445.443.919.587 1.416l1.473.294a1 1 0 0 1 .804.98v2.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.587 1.416l.833 1.25a1 1 0 0 1-.124 1.262l-1.67 1.67a1 1 0 0 1-1.262.124l-1.25-.833a6.953 6.953 0 0 1-1.416.587l-.294 1.473a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.416-.587l-1.25.833a1 1 0 0 1-1.262-.124l-1.67-1.67a1 1 0 0 1-.124-1.262l.833-1.25a6.957 6.957 0 0 1-.587-1.416l-1.473-.294A1 1 0 0 1 1 11.18V8.82a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.587-1.416l-.833-1.25a1 1 0 0 1 .124-1.262l1.67-1.67a1 1 0 0 1 1.262-.125l1.25.834a6.957 6.957 0 0 1 1.416-.587L7.84 1.804ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" /></svg>
 }
@@ -152,9 +164,16 @@ export function Sidebar() {
   const chatBadge = (unreadChat ?? 0) > 0 ? Math.min(unreadChat ?? 0, 99) : null
   const curLang = LANGS.find((l) => l.code === i18n.language) ?? LANGS[0]
 
+  const isKz = i18n.language === 'kk'
+  const isRu = i18n.language === 'ru'
+
   const mainItems = [
     { to: '/home', icon: IHome, label: t('nav.home'), end: true },
     { to: '/achievements', icon: IAch, label: t('nav.achievements') },
+    { to: '/gamification', icon: ISwords, label: isKz ? 'Баттлдар & RPG' : isRu ? 'Баттлы & RPG' : 'Battles & RPG' },
+    { to: '/roadmap', icon: ICompass, label: isKz ? 'Roadmap & AI Mentor' : isRu ? 'Roadmap & AI Ментор' : 'Roadmap & AI Mentor' },
+    { to: '/grants', icon: IGrad, label: isKz ? 'Гранттар & Mentors' : isRu ? 'Гранты & Mentors' : 'Grants & Mentors' },
+    { to: '/passport', icon: IQr, label: isKz ? 'Wallet & QR Паспорт' : isRu ? 'Wallet & QR Паспорт' : 'Wallet & QR Pass' },
     { to: '/rating', icon: IRating, label: t('nav.rating') },
     { to: '/calendar', icon: ICalendar, label: t('nav.calendar') },
     { to: '/jobs', icon: IJobs, label: t('nav.jobs') },

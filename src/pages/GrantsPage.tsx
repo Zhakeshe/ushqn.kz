@@ -1,4 +1,8 @@
+import { useState } from 'react'
 import { UniversityDirectOffers } from '../components/UniversityDirectOffers'
+import { AlumniMentorshipNetwork } from '../components/AlumniMentorshipNetwork'
+import { OlympiadCrowdfundingHub } from '../components/OlympiadCrowdfundingHub'
+import { B2BSchoolAnalyticsDashboard } from '../components/B2BSchoolAnalyticsDashboard'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
 import { useTranslation } from 'react-i18next'
@@ -9,10 +13,19 @@ export function GrantsPage() {
   const { i18n } = useTranslation()
   const isKz = i18n.language === 'kk'
   const isRu = i18n.language === 'ru'
+  const [activeTab, setActiveTab] = useState<'grants' | 'alumni' | 'crowdfund' | 'school_b2b'>('grants')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
-      <AppPageMeta title={isKz ? 'ЖОО Тікелей Гранттары' : isRu ? 'Прямые Гранты от Вузов' : 'Direct University Grants'} />
+      <AppPageMeta
+        title={
+          isKz
+            ? 'Гранттар, Alumni Менторлық & Демеушілік'
+            : isRu
+            ? 'Гранты, Менторство и Спонсорство'
+            : 'Grants, Alumni & Sponsorship'
+        }
+      />
 
       <aside className="hidden lg:block">
         <div className="sticky top-6 space-y-4">
@@ -31,7 +44,50 @@ export function GrantsPage() {
           </Link>
         </div>
 
-        <UniversityDirectOffers />
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+          {[
+            {
+              id: 'grants',
+              labelKz: '🏛️ ЖОО Тікелей Гранттары',
+              labelRu: '🏛️ Прямые Гранты ВУЗов',
+            },
+            {
+              id: 'alumni',
+              labelKz: '🎓 Alumni Менторлық (Ivy League)',
+              labelRu: '🎓 Alumni Менторство (MIT/Harvard)',
+            },
+            {
+              id: 'crowdfund',
+              labelKz: '💖 Олимпиадалық Демеушілік Қор',
+              labelRu: '💖 Спонсорский Фонд',
+            },
+            {
+              id: 'school_b2b',
+              labelKz: '🏫 B2B Мектеп Аналитикасы',
+              labelRu: '🏫 B2B Аналитика Школ',
+            },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as 'grants' | 'alumni' | 'crowdfund' | 'school_b2b')}
+              className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              {isKz ? tab.labelKz : tab.labelRu}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Contents */}
+        {activeTab === 'grants' && <UniversityDirectOffers />}
+        {activeTab === 'alumni' && <AlumniMentorshipNetwork />}
+        {activeTab === 'crowdfund' && <OlympiadCrowdfundingHub />}
+        {activeTab === 'school_b2b' && <B2BSchoolAnalyticsDashboard />}
       </div>
     </div>
   )

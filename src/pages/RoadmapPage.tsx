@@ -1,4 +1,8 @@
+import { useState } from 'react'
 import { CareerDiagnosticRadar } from '../components/CareerDiagnosticRadar'
+import { SmartRoadmapsV2 } from '../components/SmartRoadmapsV2'
+import { SocratesAiMentor } from '../components/SocratesAiMentor'
+import { DebateSpeechCoach } from '../components/DebateSpeechCoach'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
 import { useTranslation } from 'react-i18next'
@@ -9,10 +13,19 @@ export function RoadmapPage() {
   const { i18n } = useTranslation()
   const isKz = i18n.language === 'kk'
   const isRu = i18n.language === 'ru'
+  const [activeTab, setActiveTab] = useState<'roadmaps_v2' | 'socrates_ai' | 'debate_coach' | 'radar'>('roadmaps_v2')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
-      <AppPageMeta title={isKz ? 'AI Профориентация & Roadmap' : isRu ? 'AI Профориентация & Roadmap' : 'AI Career & Roadmap'} />
+      <AppPageMeta
+        title={
+          isKz
+            ? 'Smart Roadmaps 2.0 & AI Менторлар'
+            : isRu
+            ? 'Smart Roadmaps 2.0 и AI Менторы'
+            : 'Smart Roadmaps 2.0 & AI Mentors'
+        }
+      />
 
       <aside className="hidden lg:block">
         <div className="sticky top-6 space-y-4">
@@ -31,7 +44,50 @@ export function RoadmapPage() {
           </Link>
         </div>
 
-        <CareerDiagnosticRadar />
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+          {[
+            {
+              id: 'roadmaps_v2',
+              labelKz: '🧭 Smart Roadmaps 2.0',
+              labelRu: '🧭 Smart Roadmaps 2.0',
+            },
+            {
+              id: 'socrates_ai',
+              labelKz: '🤖 AI Socrates Ментор',
+              labelRu: '🤖 AI Ментор Сократ',
+            },
+            {
+              id: 'debate_coach',
+              labelKz: '🎙️ AI Дебат & Шешендік Коуч',
+              labelRu: '🎙️ AI Коуч по Дебатам',
+            },
+            {
+              id: 'radar',
+              labelKz: '🎯 Профориентация Радары',
+              labelRu: '🎯 Радар Профориентации',
+            },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as 'roadmaps_v2' | 'socrates_ai' | 'debate_coach' | 'radar')}
+              className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              {isKz ? tab.labelKz : tab.labelRu}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Contents */}
+        {activeTab === 'roadmaps_v2' && <SmartRoadmapsV2 />}
+        {activeTab === 'socrates_ai' && <SocratesAiMentor />}
+        {activeTab === 'debate_coach' && <DebateSpeechCoach />}
+        {activeTab === 'radar' && <CareerDiagnosticRadar />}
       </div>
     </div>
   )
