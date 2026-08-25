@@ -7,8 +7,23 @@ import {
   ExternalLink,
   BookOpen,
   TrendingUp,
+  Code2,
+  Check,
+  Sliders,
+  Lightbulb,
 } from 'lucide-react'
 import { useToast } from '../lib/toast'
+
+interface PracticalTask {
+  id: string
+  titleKz: string
+  titleRu: string
+  problemTextKz: string
+  problemTextRu: string
+  starterCodeOrHint: string
+  solutionExample: string
+  xpReward: number
+}
 
 interface RoadmapGoal {
   id: string
@@ -18,12 +33,20 @@ interface RoadmapGoal {
   targetHorizon: string
   icon: string
   completionPercent: number
+  targetDifficulty: 'Junior / 7-8 Сынып' | 'Middle / 9-10 Сынып' | 'Advanced / 11-12 & University'
   stages: {
     monthKz: string
     monthRu: string
     titleKz: string
     titleRu: string
-    tasks: { id: string; textKz: string; textRu: string; done: boolean; xp: number }[]
+    tasks: {
+      id: string
+      textKz: string
+      textRu: string
+      done: boolean
+      xp: number
+      practicalChallenge?: PracticalTask
+    }[]
     resources: { title: string; url: string }[]
   }[]
 }
@@ -37,6 +60,7 @@ const SAMPLE_ROADMAPS: RoadmapGoal[] = [
     targetHorizon: '2026-2027',
     icon: '💻',
     completionPercent: 45,
+    targetDifficulty: 'Advanced / 11-12 & University',
     stages: [
       {
         monthKz: '1-2 Ай: Алгоритмдер мен LeetCode Базасы',
@@ -44,9 +68,60 @@ const SAMPLE_ROADMAPS: RoadmapGoal[] = [
         titleKz: 'Data Structures & Algorithms (DSA)',
         titleRu: 'Структуры Данных и Алгоритмы (DSA)',
         tasks: [
-          { id: 'g1', textKz: 'LeetCode-та 100 Medium есеп шығару (Trees, Graphs, DP)', textRu: 'Решить 100 Medium задач на LeetCode', done: true, xp: 200 },
-          { id: 'g2', textKz: 'Time & Space Complexity (Big-O) талдауын терең меңгеру', textRu: 'Освоить анализ сложности Big-O', done: true, xp: 100 },
-          { id: 'g3', textKz: 'Codeforces рейтингін 1400+ (Specialist) деңгейіне жеткізу', textRu: 'Поднять рейтинг Codeforces до 1400+', done: false, xp: 300 },
+          {
+            id: 'g1',
+            textKz: 'LeetCode-та 100 Medium есеп шығару (Two Pointers, Graphs, DP)',
+            textRu: 'Решить 100 Medium задач на LeetCode',
+            done: true,
+            xp: 200,
+            practicalChallenge: {
+              id: 'prac-g1',
+              titleKz: 'Интерактивті практикум: Two Sum Optimal O(N)',
+              titleRu: 'Интерактивный практикум: Two Sum Optimal O(N)',
+              problemTextKz:
+                'Берілген сандар жиынынан қосындысы target-қа тең екі санның индексін Hash Map арқылы O(N) уақытта табыңыз.',
+              problemTextRu:
+                'Найдите индексы двух чисел, сумма которых равна target за O(N) с использованием Hash Map.',
+              starterCodeOrHint: `// C++ unordered_map implementation
+vector<int> twoSum(vector<int>& nums, int target) {
+    unordered_map<int, int> mp;
+    for(int i=0; i<nums.size(); ++i) {
+        int comp = target - nums[i];
+        if(mp.count(comp)) return {mp[comp], i};
+        mp[nums[i]] = i;
+    }
+    return {};
+}`,
+              solutionExample: `Hash Map (хэш-кесте) арқылы іздеу әр қадамда O(1) уақыт алады. Екі қабатты циклді (O(N^2)) бір ғана өтуге (O(N)) айналдырады.`,
+              xpReward: 150,
+            },
+          },
+          {
+            id: 'g2',
+            textKz: 'Time & Space Complexity (Big-O) талдауын терең меңгеру',
+            textRu: 'Освоить анализ сложности Big-O',
+            done: true,
+            xp: 100,
+            practicalChallenge: {
+              id: 'prac-g2',
+              titleKz: 'Big-O Интерактивті Талдау: Master Theorem',
+              titleRu: 'Интерактивный разбор Big-O: Master Theorem',
+              problemTextKz:
+                'T(N) = 2T(N/2) + O(N) рекурренттік қатынасының уақытша күрделілігі қандай және Merge Sort-та ол қалай жұмыс істейді?',
+              problemTextRu:
+                'Какова сложность рекуррентного соотношения T(N) = 2T(N/2) + O(N) по Master Theorem?',
+              starterCodeOrHint: 'T(N) = aT(N/b) + f(N), мұнда a=2, b=2, c=1 (f(N)=O(N^1)). log_b(a) = log_2(2) = 1 = c. Сондықтан жауап: O(N log N).',
+              solutionExample: 'Master Theorem 2-жағдайы бойынша: a = b^c болғанда күрделілік O(N^c log N) болады.',
+              xpReward: 100,
+            },
+          },
+          {
+            id: 'g3',
+            textKz: 'Codeforces рейтингін 1400+ (Specialist) деңгейіне жеткізу',
+            textRu: 'Поднять рейтинг Codeforces до 1400+',
+            done: false,
+            xp: 300,
+          },
         ],
         resources: [
           { title: 'NeetCode 150 Roadmap', url: 'https://neetcode.io' },
@@ -59,8 +134,20 @@ const SAMPLE_ROADMAPS: RoadmapGoal[] = [
         titleKz: 'System Architecture & Production Portfolio',
         titleRu: 'Архитектура систем и портфолио',
         tasks: [
-          { id: 'g4', textKz: 'TypeScript + Go / Python арқылы микросервистік жоба жасау', textRu: 'Создать микросервисный проект на TS/Go', done: false, xp: 350 },
-          { id: 'g5', textKz: 'USHQN резюмесін Harvard CV форматында экспорттау', textRu: 'Экспортировать резюме в Гарвардском формате', done: false, xp: 150 },
+          {
+            id: 'g4',
+            textKz: 'TypeScript + Go / Python арқылы микросервистік жоба жасау',
+            textRu: 'Создать микросервисный проект на TS/Go',
+            done: false,
+            xp: 350,
+          },
+          {
+            id: 'g5',
+            textKz: 'USHQN резюмесін Harvard CV форматында экспорттау',
+            textRu: 'Экспортировать резюме в Гарвардском формате',
+            done: false,
+            xp: 150,
+          },
         ],
         resources: [
           { title: 'System Design Primer', url: 'https://github.com/donnemartin/system-design-primer' },
@@ -76,6 +163,7 @@ const SAMPLE_ROADMAPS: RoadmapGoal[] = [
     targetHorizon: '11 Сынып',
     icon: '🏛️',
     completionPercent: 60,
+    targetDifficulty: 'Advanced / 11-12 & University',
     stages: [
       {
         monthKz: '1-3 Ай: Стандартталған Тесттер (SAT & IELTS)',
@@ -83,9 +171,39 @@ const SAMPLE_ROADMAPS: RoadmapGoal[] = [
         titleKz: 'SAT 1500+ & IELTS 8.0 Target',
         titleRu: 'Цель: SAT 1500+ & IELTS 8.0',
         tasks: [
-          { id: 'h1', textKz: 'Digital SAT 1520+ ұпайын ресми тіркеу', textRu: 'Сдать Digital SAT на 1520+', done: true, xp: 400 },
-          { id: 'h2', textKz: 'IELTS Academic 8.0 сертификатын USHQN-ға верификациялау', textRu: 'Верифицировать сертификат IELTS 8.0', done: true, xp: 300 },
-          { id: 'h3', textKz: 'Common App негізгі эссесінің (Personal Statement) 3 нұсқасын жазу', textRu: 'Написать 3 драфта Personal Statement', done: false, xp: 250 },
+          {
+            id: 'h1',
+            textKz: 'Digital SAT 1520+ ұпайын ресми тіркеу (Math 800/800)',
+            textRu: 'Сдать Digital SAT на 1520+',
+            done: true,
+            xp: 400,
+            practicalChallenge: {
+              id: 'prac-sat',
+              titleKz: 'Digital SAT Math: Desmos Tricks & Quadratics',
+              titleRu: 'Практикум Digital SAT Math: Лайфхаки Desmos',
+              problemTextKz:
+                'y = -2(x - 3)^2 + 18 функциясының төбесі (vertex) мен x-осімен қиылысу нүктелерін лезде анықтаңыз.',
+              problemTextRu:
+                'Найдите вершину параболы y = -2(x - 3)^2 + 18 и точки пересечения с осью X.',
+              starterCodeOrHint: 'Vertex: (h, k) = (3, 18). Түбірлері: -2(x-3)^2 + 18 = 0 => (x-3)^2 = 9 => x = 0 немесе x = 6.',
+              solutionExample: 'Парабола тармақтары төмен қараған, максимум мәні 18. Түбірлері: (0, 0) және (6, 0).',
+              xpReward: 120,
+            },
+          },
+          {
+            id: 'h2',
+            textKz: 'IELTS Academic 8.0 сертификатын USHQN-ға верификациялау',
+            textRu: 'Верифицировать сертификат IELTS 8.0',
+            done: true,
+            xp: 300,
+          },
+          {
+            id: 'h3',
+            textKz: 'Common App негізгі эссесінің (Personal Statement) 3 нұсқасын жазу',
+            textRu: 'Написать 3 драфта Personal Statement',
+            done: false,
+            xp: 250,
+          },
         ],
         resources: [
           { title: 'Khan Academy SAT Official', url: 'https://khanacademy.org/sat' },
@@ -102,6 +220,7 @@ const SAMPLE_ROADMAPS: RoadmapGoal[] = [
     targetHorizon: '2026',
     icon: '🏆',
     completionPercent: 30,
+    targetDifficulty: 'Advanced / 11-12 & University',
     stages: [
       {
         monthKz: 'Ай 1: Күрделі Графтар & Segment Trees',
@@ -109,8 +228,41 @@ const SAMPLE_ROADMAPS: RoadmapGoal[] = [
         titleKz: 'Advanced Data Structures & DP Optimization',
         titleRu: 'Продвинутые структуры данных и ДП',
         tasks: [
-          { id: 'ioi1', textKz: 'Lazy Propagation бар Segment Tree және Fenwick Tree', textRu: 'Segment Tree с Lazy Propagation', done: true, xp: 200 },
-          { id: 'ioi2', textKz: 'Convex Hull Trick және Divide & Conquer DP', textRu: 'Оптимизации ДП: Convex Hull Trick', done: false, xp: 400 },
+          {
+            id: 'ioi1',
+            textKz: 'Lazy Propagation бар Segment Tree және Fenwick Tree',
+            textRu: 'Segment Tree с Lazy Propagation',
+            done: true,
+            xp: 200,
+            practicalChallenge: {
+              id: 'prac-segtree',
+              titleKz: 'Segment Tree Range Update O(log N)',
+              titleRu: 'Segment Tree Range Update O(log N)',
+              problemTextKz:
+                'N=10^5 массивте аралықты (range [L, R]) жаңарту және қосындыны сұрау Lazy Propagation арқылы қалай жүзеге асырылады?',
+              problemTextRu:
+                'Реализация Lazy Propagation в дереве отрезков для массового обновления диапазона [L, R] за O(log N).',
+              starterCodeOrHint: `void push(int v, int tl, int tr) {
+    if (lazy[v] != 0) {
+        int tm = (tl + tr) / 2;
+        tree[v*2] += lazy[v] * (tm - tl + 1);
+        lazy[v*2] += lazy[v];
+        tree[v*2+1] += lazy[v] * (tr - tm);
+        lazy[v*2+1] += lazy[v];
+        lazy[v] = 0;
+    }
+}`,
+              solutionExample: 'Lazy Propagation операцияны қажет болғанға дейін кейінге қалдырып, күрделілікті O(N)-нен O(log N)-ге түсіреді.',
+              xpReward: 250,
+            },
+          },
+          {
+            id: 'ioi2',
+            textKz: 'Convex Hull Trick және Divide & Conquer DP',
+            textRu: 'Оптимизации ДП: Convex Hull Trick',
+            done: false,
+            xp: 400,
+          },
         ],
         resources: [
           { title: 'e-maxx.ru / CP-Algorithms', url: 'https://cp-algorithms.com' },
@@ -126,7 +278,13 @@ export function SmartRoadmapsV2() {
   const { toast } = useToast()
 
   const [activeGoalId, setActiveGoalId] = useState<string>('goal-google')
-  const [roadmaps, setRoadmaps] = useState<RoadmapGoal[]>(SAMPLE_PROBLEMS_V2)
+  const [roadmaps, setRoadmaps] = useState<RoadmapGoal[]>(SAMPLE_ROADMAPS)
+  const [activeAdaptiveLevel, setActiveAdaptiveLevel] = useState<
+    'Junior / 7-8 Сынып' | 'Middle / 9-10 Сынып' | 'Advanced / 11-12 & University'
+  >('Advanced / 11-12 & University')
+
+  const [selectedPractice, setSelectedPractice] = useState<PracticalTask | null>(null)
+  const [completedPractices, setCompletedPractices] = useState<string[]>([])
 
   const activeGoal = roadmaps.find((g) => g.id === activeGoalId) || roadmaps[0]
 
@@ -143,7 +301,7 @@ export function SmartRoadmapsV2() {
             if (t.id === taskId) {
               const newDone = !t.done
               if (newDone) {
-                toast(isKz ? `🎯 Тапсырма орындалды! +${xp} XP` : `🎯 Задача выполнена! +${xp} XP`)
+                toast(isKz ? `🎯 Тапсырма орындалды! +${xp} XP` : `🎯 Задача выполнена! +${xp} XP`, 'success')
               }
               return { ...t, done: newDone }
             }
@@ -167,38 +325,89 @@ export function SmartRoadmapsV2() {
     )
   }
 
+  const handleCompletePractice = (practice: PracticalTask) => {
+    if (!completedPractices.includes(practice.id)) {
+      setCompletedPractices((p) => [...p, practice.id])
+      toast(
+        isKz
+          ? `🎉 Практикум аяқталды! +${practice.xpReward} XP берілді!`
+          : `🎉 Практикум сдан! Начислено +${practice.xpReward} XP!`,
+        'success',
+      )
+    }
+    setSelectedPractice(null)
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 p-6 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-blue-950 p-6 sm:p-8 text-white shadow-xl">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold text-blue-300 backdrop-blur-md">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3.5 py-1 text-xs font-bold text-blue-300 backdrop-blur-md border border-blue-400/20">
               <Compass className="h-3.5 w-3.5 text-blue-400" />
               <span>Smart Roadmaps 2.0</span>
               <span className="rounded bg-indigo-500/30 px-1.5 py-0.5 text-[10px] font-black text-indigo-200">
-                DYNAMIC TRAJECTORIES
+                ADAPTIVE LEARNING
               </span>
             </div>
             <h2 className="text-xl font-black tracking-tight sm:text-2xl">
-              {isKz ? 'Үлкен Мақсаттарға Арналған Жол Картасы' : 'Индивидуальные Траектории и Роадмапы'}
+              {isKz ? 'Үлкен Мақсаттарға Арналған Жол Картасы & Тәжірибелік Лаборатория' : 'Индивидуальные Траектории и Практикумы'}
             </h2>
-            <p className="max-w-xl text-xs text-blue-100/80 sm:text-sm">
+            <p className="max-w-xl text-xs text-blue-100/80 sm:text-sm leading-relaxed">
               {isKz
-                ? 'Google-дағы тағылымдама, Harvard толық гранты немесе Халықаралық Олимпиада алтынына ай сайынғы нақты қадамдар мен прогресс-трекер.'
-                : 'Пошаговый трекер к ключевым целям: стажировка в BigTech, 100% гранты топ-ВУЗов или золото на международных олимпиадах.'}
+                ? 'Google-дағы тағылымдама, Harvard 100% гранты немесе Халықаралық Олимпиада алтынына арналған ай сайынғы нақты қадамдар, интерактивті код мысалдары мен тәжірибелік тапсырмалар.'
+                : 'Пошаговый трекер к ключевым целям: стажировка в BigTech, 100% гранты топ-ВУЗов или олимпиадное золото с интерактивными код-практикумами.'}
             </p>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center backdrop-blur-md">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5 text-center backdrop-blur-md shrink-0">
             <span className="text-[10px] font-bold uppercase text-slate-300">
               {isKz ? 'Жалпы Прогресс' : 'Прогресс цели'}
             </span>
             <div className="mt-1 flex items-center justify-center gap-1.5 text-emerald-400">
               <TrendingUp className="h-5 w-5" />
-              <span className="text-2xl font-black">{activeGoal.completionPercent}%</span>
+              <span className="text-3xl font-black">{activeGoal.completionPercent}%</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Adaptive Level Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+          <Sliders className="h-4 w-4 text-blue-600" />
+          <span>{isKz ? 'Оқушы деңгейіне бейімделу (Adaptive Level):' : 'Адаптивный уровень сложности:'}</span>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {(
+            [
+              'Junior / 7-8 Сынып',
+              'Middle / 9-10 Сынып',
+              'Advanced / 11-12 & University',
+            ] as const
+          ).map((lvl) => (
+            <button
+              key={lvl}
+              type="button"
+              onClick={() => {
+                setActiveAdaptiveLevel(lvl)
+                toast(
+                  isKz
+                    ? `🎯 Деңгей өзгертілді: ${lvl}. Жол картасы бейімделді.`
+                    : `🎯 Уровень изменен: ${lvl}.`,
+                )
+              }}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                activeAdaptiveLevel === lvl
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'
+              }`}
+            >
+              {lvl}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -249,7 +458,7 @@ export function SmartRoadmapsV2() {
         {activeGoal.stages.map((stage, sIdx) => (
           <div
             key={sIdx}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 space-y-4"
+            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4"
           >
             <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center border-b border-slate-100 pb-3 dark:border-slate-800">
               <div>
@@ -266,53 +475,68 @@ export function SmartRoadmapsV2() {
             </div>
 
             {/* Tasks list */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {stage.tasks.map((task) => (
                 <div
                   key={task.id}
-                  onClick={() => toggleTask(task.id, task.xp)}
-                  className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 text-xs transition ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-2xl border p-4 text-xs transition ${
                     task.done
                       ? 'border-emerald-200 bg-emerald-50/50 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200'
                       : 'border-slate-200 bg-slate-50/50 text-slate-800 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div
+                    onClick={() => toggleTask(task.id, task.xp)}
+                    className="flex cursor-pointer items-center gap-3 flex-1"
+                  >
                     {task.done ? (
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
                     ) : (
-                      <Circle className="h-4 w-4 shrink-0 text-slate-400" />
+                      <Circle className="h-5 w-5 shrink-0 text-slate-400" />
                     )}
-                    <span className={task.done ? 'line-through opacity-80' : 'font-medium'}>
+                    <span className={task.done ? 'line-through opacity-80' : 'font-semibold'}>
                       {isKz ? task.textKz : task.textRu}
                     </span>
                   </div>
 
-                  <span className="shrink-0 rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-300">
-                    +{task.xp} XP
-                  </span>
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    {task.practicalChallenge && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPractice(task.practicalChallenge!)}
+                        className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs hover:bg-indigo-700 active:scale-95"
+                      >
+                        <Code2 className="h-3.5 w-3.5" />
+                        <span>{isKz ? 'Интерактивті Мысал' : 'Интерактивный разбор'}</span>
+                      </button>
+                    )}
+
+                    <span className="shrink-0 rounded-lg bg-blue-100 px-2.5 py-1 text-[10px] font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                      +{task.xp} XP
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
 
             {/* Curated Resources */}
             {stage.resources.length > 0 && (
-              <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
+              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
                 <span className="text-[11px] font-bold uppercase text-slate-400">
-                  {isKz ? 'Ұсынылатын материалдар мен сілтемелер:' : 'Рекомендованные ресурсы:'}
+                  {isKz ? 'Ұсынылатын материалдар мен ресми платформалар:' : 'Рекомендованные ресурсы:'}
                 </span>
-                <div className="mt-1.5 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {stage.resources.map((res, rIdx) => (
                     <a
                       key={rIdx}
                       href={res.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-blue-600 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-blue-400"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-blue-400"
                     >
-                      <BookOpen className="h-3 w-3" />
+                      <BookOpen className="h-3.5 w-3.5" />
                       <span>{res.title}</span>
-                      <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                      <ExternalLink className="h-3 w-3 opacity-60" />
                     </a>
                   ))}
                 </div>
@@ -321,8 +545,67 @@ export function SmartRoadmapsV2() {
           </div>
         ))}
       </div>
+
+      {/* Practical Task & Code Modal */}
+      {selectedPractice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                  <Lightbulb className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  {isKz ? selectedPractice.titleKz : selectedPractice.titleRu}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPractice(null)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+              <div className="rounded-2xl bg-indigo-50/60 p-4 dark:bg-indigo-950/30 text-indigo-950 dark:text-indigo-200">
+                <span className="font-bold">Тапсырма шарты: </span>
+                {isKz ? selectedPractice.problemTextKz : selectedPractice.problemTextRu}
+              </div>
+
+              <div>
+                <div className="font-bold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider mb-1">
+                  Оңтайлы Кодтық Шешім немесе Алгоритм:
+                </div>
+                <pre className="rounded-2xl bg-slate-950 p-4 font-mono text-xs text-emerald-400 overflow-x-auto">
+                  <code>{selectedPractice.starterCodeOrHint}</code>
+                </pre>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-800/40 text-[11px] text-slate-600 dark:text-slate-400">
+                <span className="font-bold text-slate-900 dark:text-white">Түсініктеме мен Complexity: </span>
+                {selectedPractice.solutionExample}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                Сыйлық: +{selectedPractice.xpReward} XP
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCompletePractice(selectedPractice)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 active:scale-95"
+              >
+                <Check className="h-4 w-4" />
+                <span>{isKz ? 'Түсіндім & XP алу' : 'Понятно & Получить XP'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-const SAMPLE_PROBLEMS_V2 = SAMPLE_ROADMAPS

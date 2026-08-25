@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DigitalPassportCard, DigitalPassportModal } from '../components/DigitalPassportModal'
 import { DigitalWalletAndNftCard } from '../components/DigitalWalletAndNftCard'
-import { DigitalBusinessCardStudio } from '../components/DigitalBusinessCardStudio'
+import { AppleAndGooglePayStudio } from '../components/AppleAndGooglePayStudio'
 import { QrOrganizerScannerModal } from '../components/QrOrganizerScannerModal'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
@@ -15,11 +15,11 @@ export function PassportPage() {
   const isRu = i18n.language === 'ru'
   const [modalOpen, setModalOpen] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
-  const [activeView, setActiveView] = useState<'business_card' | 'wallet_nft' | 'standard'>('business_card')
+  const [activeView, setActiveView] = useState<'apple_google_pay' | 'wallet_nft' | 'standard'>('apple_google_pay')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
-      <AppPageMeta title={isKz ? 'Цифрлық Визитка & QR Паспорт' : isRu ? 'Цифровая Визитка и QR Паспорт' : 'Digital Business Card & QR Pass'} />
+      <AppPageMeta title={isKz ? 'Apple Pay, Google Pay & QR Wallet' : isRu ? 'Apple Pay, Google Pay & QR Wallet' : 'Apple Pay, Google Pay & Wallet Pass'} />
 
       <aside className="hidden lg:block">
         <div className="sticky top-6 space-y-4">
@@ -53,14 +53,14 @@ export function PassportPage() {
         <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
           <button
             type="button"
-            onClick={() => setActiveView('business_card')}
+            onClick={() => setActiveView('apple_google_pay')}
             className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
-              activeView === 'business_card'
-                ? 'bg-blue-600 text-white shadow-xs'
+              activeView === 'apple_google_pay'
+                ? 'bg-slate-950 text-white shadow-xs dark:bg-white dark:text-slate-950'
                 : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            🪪 {isKz ? 'Интерактивті Визитка & CRM' : 'Интерактивная Визитка и CRM'}
+             Pay & G Pay Hub
           </button>
           <button
             type="button"
@@ -71,7 +71,7 @@ export function PassportPage() {
                 : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            📱 Apple / Google Wallet
+            📱 Apple / Google Wallet & NFC
           </button>
           <button
             type="button"
@@ -86,7 +86,7 @@ export function PassportPage() {
           </button>
         </div>
 
-        {activeView === 'business_card' && <DigitalBusinessCardStudio />}
+        {activeView === 'apple_google_pay' && <AppleAndGooglePayStudio />}
         {activeView === 'wallet_nft' && <DigitalWalletAndNftCard />}
         {activeView === 'standard' && <DigitalPassportCard onOpenModal={() => setModalOpen(true)} />}
 
