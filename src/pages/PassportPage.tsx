@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { DigitalPassportCard, DigitalPassportModal } from '../components/DigitalPassportModal'
 import { DigitalWalletAndNftCard } from '../components/DigitalWalletAndNftCard'
-import { AppleAndGooglePayStudio } from '../components/AppleAndGooglePayStudio'
+import { ApplePayCheckout } from '../components/ApplePayCheckout'
 import { QrOrganizerScannerModal } from '../components/QrOrganizerScannerModal'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
@@ -63,7 +63,7 @@ export function PassportPage() {
                 : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-             Pay & G Pay Hub
+             Apple Pay
           </button>
           <button
             type="button"
@@ -89,7 +89,7 @@ export function PassportPage() {
           </button>
         </div>
 
-        {activeView === 'apple_google_pay' && <AppleAndGooglePayStudio />}
+        {activeView === 'apple_google_pay' && <ApplePayCheckout />}
         {activeView === 'wallet_nft' && <DigitalWalletAndNftCard />}
         {activeView === 'standard' && <DigitalPassportCard onOpenModal={() => setModalOpen(true)} />}
 

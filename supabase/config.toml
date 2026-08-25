@@ -1,0 +1,2 @@
+[functions.create-apple-pay-checkout]
+verify_jwt = true
