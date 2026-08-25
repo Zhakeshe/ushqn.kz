@@ -13,7 +13,7 @@ export type JobApplicationStatus =
 export type JobWorkMode = 'any' | 'remote' | 'onsite' | 'hybrid'
 export type JobVacancyStatus = 'open' | 'filled' | 'closed_not_needed' | 'closed_other'
 
-export interface Database {
+interface DatabaseShape {
   public: {
     Tables: {
       profiles: {
@@ -40,6 +40,7 @@ export interface Database {
           referred_by: string | null
           onboarding_bonus_claimed: boolean
           onboarding_completed_at: string | null
+          onboarding_step: string
           onboarding_dismissed_at: string | null
           org_verified: boolean
           is_banned: boolean
@@ -204,12 +205,7 @@ export interface Database {
           description?: string | null
           file_path?: string | null
         }
-        Update: Partial<
-          Omit<
-            Database['public']['Tables']['achievements']['Row'],
-            'id' | 'user_id' | 'points_awarded'
-          >
-        >
+        Update: Partial<Omit<Database['public']['Tables']['achievements']['Row'], 'id' | 'user_id'>>
       }
       user_category_scores: {
         Row: {
@@ -533,6 +529,58 @@ export interface Database {
           Omit<Database['public']['Tables']['events']['Row'], 'id' | 'owner_id' | 'created_at'>
         >
       }
+      event_rsvps: {
+        Row: {
+          user_id: string
+          event_id: string
+          status: 'going' | 'maybe' | 'not_going'
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          event_id: string
+          status?: 'going' | 'maybe' | 'not_going'
+        }
+        Update: { status?: 'going' | 'maybe' | 'not_going' }
+      }
+      bookmarks: {
+        Row: {
+          id: string
+          user_id: string
+          target_type: 'job' | 'listing' | 'event'
+          target_id: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          target_type: 'job' | 'listing' | 'event'
+          target_id: string
+        }
+        Update: never
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          actor_id: string | null
+          kind: string
+          title: string
+          body: string | null
+          link: string | null
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          actor_id?: string | null
+          kind: string
+          title: string
+          body?: string | null
+          link?: string | null
+          is_read?: boolean
+        }
+        Update: { is_read?: boolean }
+      }
     }
     Functions: {
       get_or_create_dm: {
@@ -549,6 +597,8 @@ export interface Database {
           conversation_id: string
           is_group: boolean
           title: string | null
+          is_public_channel: boolean
+          channel_slug: string | null
           last_body: string | null
           last_at: string | null
           last_sender_id: string | null
@@ -598,6 +648,60 @@ export interface Database {
         Args: { p_group_id: string; p_student_id: string }
         Returns: void
       }
+      create_student_invite: {
+        Args: { p_link_type: 'parent' | 'teacher' }
+        Returns: { id: string; invite_code: string; expires_at: string }[]
+      }
+      accept_student_invite: {
+        Args: { p_invite_code: string }
+        Returns: string
+      }
+      join_teacher_group: {
+        Args: { p_join_code: string }
+        Returns: string
+      }
+      switch_student_teacher: {
+        Args: { p_student_id: string; p_new_teacher_id: string }
+        Returns: string
+      }
+      create_public_channel: {
+        Args: { p_title: string; p_slug: string; p_member_ids: string[] }
+        Returns: string
+      }
+      join_public_channel: {
+        Args: { p_slug: string }
+        Returns: string
+      }
+      rename_group_conversation: {
+        Args: { p_conv_id: string; p_title: string }
+        Returns: void
+      }
     }
+  }
+}
+
+type NormalizeTable<T> = T extends { Row: infer Row }
+  ? {
+      Row: Row
+      Insert: T extends { Insert: infer Insert } ? Insert : Partial<Row>
+      Update: T extends { Update: infer Update } ? Update : Partial<Row>
+      Relationships: []
+    }
+  : never
+
+/**
+ * Supabase client schema. `DatabaseShape` keeps the hand-maintained row types readable,
+ * while this mapped type supplies the metadata required by current supabase-js releases.
+ * Regenerate this file from Supabase after every production schema change.
+ */
+export type Database = {
+  public: {
+    Tables: {
+      [Name in keyof DatabaseShape['public']['Tables']]: NormalizeTable<DatabaseShape['public']['Tables'][Name]>
+    }
+    Views: Record<string, never>
+    Functions: DatabaseShape['public']['Functions']
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }

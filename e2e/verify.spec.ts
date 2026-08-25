@@ -1,9 +1,11 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test'
 
-test('capture screenshots', async ({ page }) => {
-  await page.goto('/');
-  await page.screenshot({ path: 'verification/screenshots/landing_v2.png', fullPage: true });
+test('public landing and login routes render', async ({ page }) => {
+  await page.goto('/')
+  await expect(page).toHaveTitle(/USHQN/)
+  await expect(page.locator('body')).toContainText('USHQN')
 
-  await page.goto('/login');
-  await page.screenshot({ path: 'verification/screenshots/login_v2.png', fullPage: true });
-});
+  await page.goto('/login')
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.locator('form')).toBeVisible()
+})

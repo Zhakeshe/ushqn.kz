@@ -8,6 +8,7 @@ import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Scan } from 'lucide-react'
+import { FeatureStatusNotice } from '../components/FeatureStatusNotice'
 
 export function PassportPage() {
   const { i18n } = useTranslation()
@@ -15,11 +16,11 @@ export function PassportPage() {
   const isRu = i18n.language === 'ru'
   const [modalOpen, setModalOpen] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
-  const [activeView, setActiveView] = useState<'apple_google_pay' | 'wallet_nft' | 'standard'>('apple_google_pay')
+  const [activeView, setActiveView] = useState<'apple_google_pay' | 'wallet_nft' | 'standard'>('standard')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
-      <AppPageMeta title={isKz ? 'Apple Pay, Google Pay & QR Wallet' : isRu ? 'Apple Pay, Google Pay & QR Wallet' : 'Apple Pay, Google Pay & Wallet Pass'} />
+      <AppPageMeta title={isKz ? 'Цифрлық паспорт зертханасы' : isRu ? 'Лаборатория цифрового паспорта' : 'Digital passport lab'} />
 
       <aside className="hidden lg:block">
         <div className="sticky top-6 space-y-4">
@@ -48,6 +49,8 @@ export function PassportPage() {
             </button>
           </div>
         </div>
+
+        <FeatureStatusNotice kind={activeView === 'standard' ? 'verification' : 'financial'} />
 
         {/* View Switcher */}
         <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">

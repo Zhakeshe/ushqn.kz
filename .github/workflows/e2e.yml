@@ -1,4 +1,4 @@
-name: E2E
+name: Quality
 
 on:
   push:
@@ -7,21 +7,18 @@ on:
     branches: [main, master]
 
 jobs:
-  playwright:
+  quality:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm run test:e2e
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run test
+      - run: bun run build
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
         env:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}

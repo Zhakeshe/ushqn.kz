@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { fetchLeaderboardTotals } from '../lib/leaderboard'
+import { FeatureStatusNotice } from '../components/FeatureStatusNotice'
 import type { Variants } from 'framer-motion'
 import { motion } from 'framer-motion'
 import {
@@ -152,7 +153,7 @@ export function LandingPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('achievements')
-        .select('id, title, category, points_awarded, created_at, user_id')
+        .select('id, title, points_awarded, created_at, user_id')
         .order('created_at', { ascending: false })
         .limit(4)
       return data ?? []
@@ -469,7 +470,7 @@ export function LandingPage() {
   ]
 
   const CTA_CHECKS = [
-    isKz ? 'Тексерілген QR Цифрлық Паспорт' : isEn ? 'Verified QR Digital Passport' : 'Верифицированный QR-паспорт',
+    isKz ? 'QR цифрлық паспорт демосы' : isEn ? 'QR digital passport demo' : 'Демо цифрового QR-паспорта',
     isKz ? 'AI Ментор және қадамдық грант жоспары' : isEn ? 'AI Mentor and step-by-step grant plan' : 'AI-ментор и план поступления на грант',
     isKz ? 'XP ұпайлары және республикалық рейтинг' : isEn ? 'XP points and nationwide leaderboard' : 'XP-геймификация и открытый рейтинг',
     isKz ? 'Жетекші ЖОО мен қорлардан тікелей ұсыныстар' : isEn ? 'Direct grant offers from top universities' : 'Прямые офферы на гранты от топ-вузов',
@@ -609,6 +610,9 @@ export function LandingPage() {
         {/* Hero Section */}
         <section className="relative overflow-hidden pt-20 pb-10 sm:pt-28 sm:pb-16 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mb-8">
+              <FeatureStatusNotice />
+            </div>
             <motion.div
               variants={containerVariants}
               initial="hidden"

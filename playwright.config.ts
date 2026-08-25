@@ -18,7 +18,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'pnpm run build && pnpm exec vite preview --host 127.0.0.1 --port 4173 --strictPort',
+    command: 'bun run build && bunx vite preview --host 127.0.0.1 --port 4173 --strictPort',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

@@ -8,6 +8,7 @@ import { QueryState } from '../components/QueryState'
 import { trackEvent } from '../lib/analytics'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../lib/toast'
+import type { Database } from '../types/database'
 import {
   ShieldCheck,
   CheckCircle2,
@@ -20,7 +21,7 @@ import {
   Check,
 } from 'lucide-react'
 
-async function countRows(table: string) {
+async function countRows(table: keyof Database['public']['Tables']) {
   const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true })
   if (error) throw error
   return count ?? 0
@@ -174,7 +175,7 @@ export function AdminPage() {
       const [{ data: achs, error: e1 }, { data: cats, error: e2 }, { data: profiles, error: e3 }] = await Promise.all([
         supabase.from('achievements').select('*').order('created_at', { ascending: false }).limit(100),
         supabase.from('achievement_categories').select('id, label_ru, default_points, slug'),
-        supabase.from('profiles').select('id, display_name, grade, school, role, avatar_url'),
+        supabase.from('profiles').select('id, display_name, school_or_org, location, role, avatar_url'),
       ])
       if (e1) throw e1
       if (e2) throw e2
@@ -191,8 +192,8 @@ export function AdminPage() {
           category_slug: cat?.slug ?? 'other',
           default_points: cat?.default_points ?? 300,
           user_name: prof?.display_name ?? 'Оқушы',
-          user_grade: prof?.grade ?? 10,
-          user_school: prof?.school ?? 'РФМШ',
+          user_grade: prof?.role ?? 'student',
+          user_school: prof?.school_or_org ?? prof?.location ?? '—',
           user_avatar: prof?.avatar_url ?? null,
           file_url: a.file_path ? supabase.storage.from('uploads').getPublicUrl(a.file_path).data.publicUrl : null,
         }
@@ -261,7 +262,10 @@ export function AdminPage() {
   })
 
   const patchProfile = useMutation({
-    mutationFn: async (p: { id: string; patch: Record<string, boolean> }) => {
+    mutationFn: async (p: {
+      id: string
+      patch: Partial<Pick<Database['public']['Tables']['profiles']['Update'], 'is_admin' | 'is_moderator' | 'org_verified' | 'is_banned'>>
+    }) => {
       const { error } = await supabase.from('profiles').update(p.patch).eq('id', p.id)
       if (error) throw error
     },
@@ -1029,7 +1033,7 @@ export function AdminPage() {
               onClick={() => {
                 const header = ['ID', 'Аты-жөні', 'Сынып', 'Мектеп', 'XP', 'Расталған Дипломдар', 'Грантқа Дайындық'].join(',')
                 const rows = (curatorQuery.data ?? []).map((s) =>
-                  [s.id, csvEscape(s.display_name), s.grade || 10, csvEscape(s.school || 'РФМШ'), s.totalXp, s.verifiedCount, s.isGrantEligible ? 'Иә' : 'Жоқ'].join(','),
+                  [s.id, csvEscape(s.display_name), s.role, csvEscape(s.school_or_org || '—'), s.totalXp, s.verifiedCount, s.isGrantEligible ? 'Иә' : 'Жоқ'].join(','),
                 )
                 downloadTextFile(`USHQN_School_Report_${Date.now()}.csv`, [header, ...rows].join('\n'))
                 toast(isKz ? 'Есептеме CSV форматында жүктелді' : 'Отчет выгружен в CSV')
@@ -1070,7 +1074,7 @@ export function AdminPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-                          {st.grade || 10}-сынып · {st.school || 'РФМШ Алматы'}
+                          {st.role} · {st.school_or_org || st.location || '—'}
                         </td>
                         <td className="px-4 py-3 font-black text-blue-600 dark:text-blue-400">
                           {st.totalXp.toLocaleString()} XP

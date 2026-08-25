@@ -1,7 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
 import { MobileNav } from './MobileNav'
 import { Sidebar } from './Sidebar'
 import { OfflineBanner } from './OfflineBanner'
@@ -11,33 +9,14 @@ import { ThemeSync } from './ThemeSync'
 import { ChatMessageNotifications } from './ChatMessageNotifications'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useNotificationUnreadCount } from '../hooks/useUnreadCounts'
 
 /* Minimal top-bar — mobile only (lg:hidden) */
 function TopBar() {
   const { t, i18n } = useTranslation()
   const { userId } = useAuth()
-  const qc = useQueryClient()
   const navigate = useNavigate()
-
-  const { data: unread } = useQuery({
-    queryKey: ['notif-count', userId],
-    enabled: Boolean(userId),
-    refetchInterval: 30_000,
-    queryFn: async () => {
-      const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId!).eq('is_read', false)
-      return count ?? 0
-    },
-  })
-
-  useEffect(() => {
-    if (!userId) return
-    const ch = supabase.channel(`topbar-notif:${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => {
-        void qc.invalidateQueries({ queryKey: ['notif-count', userId] })
-      })
-      .subscribe()
-    return () => { void supabase.removeChannel(ch) }
-  }, [userId, qc])
+  const { data: unread } = useNotificationUnreadCount(userId)
 
   const badge = (unread ?? 0) > 0 ? Math.min(unread ?? 0, 99) : null
 

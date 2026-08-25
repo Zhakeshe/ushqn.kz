@@ -177,10 +177,8 @@ export function AchievementsPage() {
     return {
       name: p?.display_name || (isKz ? 'Әлішер Төлеубаев' : 'Алишер Толеубаев'),
       studentId: p?.id ? `USH-KZ-2026-${p.id.slice(0, 4).toUpperCase()}` : 'USH-KZ-2026-8941',
-      grade: p?.grade || 10,
-      school: p?.school || 'РФМШ Алматы / Білім-Инновация',
-      city: p?.city || 'Алматы, Қазақстан',
-      email: p?.contact_email || 'student@ushqn.app',
+      school: p?.school_or_org || undefined,
+      city: p?.location || undefined,
       bio: p?.bio || undefined,
       totalXp: totalPoints > 0 ? totalPoints : 1450,
       leaderboardRank: 12,

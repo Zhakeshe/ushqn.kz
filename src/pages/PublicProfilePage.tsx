@@ -236,6 +236,7 @@ export function PublicProfilePage() {
   const profileUrl = `${origin}/u/${id}`
 
   async function dm() {
+    if (!id) return
     const { data, error } = await supabase.rpc('get_or_create_dm', { other_id: id })
     if (error) {
       toast(t('jobs.chatOpenErr'), 'error')

@@ -1,10 +1,10 @@
 import React from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useChatUnreadCount, useNotificationUnreadCount } from '../hooks/useUnreadCounts'
 
 /* ── Nav icons ── */
 function IHome() {
@@ -66,12 +66,14 @@ function NavItem({
   label,
   end,
   badge,
+  status,
 }: {
   to: string
   icon: () => React.ReactElement
   label: string
   end?: boolean
   badge?: number | null
+  status?: string
 }) {
   return (
     <NavLink
@@ -97,6 +99,11 @@ function NavItem({
           {badge}
         </span>
       ) : null}
+      {status ? (
+        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+          {status}
+        </span>
+      ) : null}
     </NavLink>
   )
 }
@@ -108,44 +115,8 @@ export function Sidebar() {
   const [langOpen, setLangOpen] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
 
-  const { data: unreadCount } = useQuery({
-    queryKey: ['notif-count', userId],
-    enabled: Boolean(userId),
-    refetchInterval: 30_000,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId!)
-        .eq('is_read', false)
-      return count ?? 0
-    },
-  })
-
-  const { data: unreadChat } = useQuery({
-    queryKey: ['chat-unread-total', userId],
-    enabled: Boolean(userId),
-    refetchInterval: 15_000,
-    queryFn: async () => {
-      const { data: memberships } = await supabase
-        .from('conversation_members')
-        .select('conversation_id, last_read_at')
-        .eq('user_id', userId!)
-      if (!memberships?.length) return 0
-      let total = 0
-      for (const m of memberships) {
-        const q = supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', m.conversation_id)
-          .neq('sender_id', userId!)
-        if (m.last_read_at) q.gt('created_at', m.last_read_at)
-        const { count } = await q
-        total += count ?? 0
-      }
-      return total
-    },
-  })
+  const { data: unreadCount } = useNotificationUnreadCount(userId)
+  const { data: unreadChat } = useChatUnreadCount(userId)
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -167,18 +138,22 @@ export function Sidebar() {
   const isKz = i18n.language === 'kk'
   const isRu = i18n.language === 'ru'
 
-  const mainItems = [
+  const coreItems = [
     { to: '/home', icon: IHome, label: t('nav.home'), end: true },
     { to: '/achievements', icon: IAch, label: t('nav.achievements') },
-    { to: '/gamification', icon: ISwords, label: isKz ? 'Баттлдар & RPG' : isRu ? 'Баттлы & RPG' : 'Battles & RPG' },
-    { to: '/roadmap', icon: ICompass, label: isKz ? 'Roadmap & AI Mentor' : isRu ? 'Roadmap & AI Ментор' : 'Roadmap & AI Mentor' },
-    { to: '/grants', icon: IGrad, label: isKz ? 'Гранттар & Mentors' : isRu ? 'Гранты & Mentors' : 'Grants & Mentors' },
-    { to: '/passport', icon: IQr, label: isKz ? ' Apple/G Pay & Wallet' : isRu ? ' Apple/G Pay & Wallet' : ' Apple/G Pay & Wallet' },
-    { to: '/rating', icon: IRating, label: t('nav.rating') },
-    { to: '/calendar', icon: ICalendar, label: t('nav.calendar') },
     { to: '/jobs', icon: IJobs, label: t('nav.jobs') },
     { to: '/people', icon: IPeople, label: t('nav.people') },
     { to: '/chat', icon: IChat, label: t('nav.chat'), badge: chatBadge },
+    { to: '/calendar', icon: ICalendar, label: t('nav.calendar') },
+    { to: '/rating', icon: IRating, label: t('nav.rating') },
+  ]
+
+  const demoLabel = isKz ? 'Демо' : isRu ? 'Демо' : 'Demo'
+  const labItems = [
+    { to: '/roadmap', icon: ICompass, label: isKz ? 'Roadmap & AI' : isRu ? 'Roadmap & AI' : 'Roadmap & AI', status: demoLabel },
+    { to: '/gamification', icon: ISwords, label: isKz ? 'Оқу зертханасы' : isRu ? 'Учебная лаборатория' : 'Learning lab', status: demoLabel },
+    { to: '/grants', icon: IGrad, label: isKz ? 'Мүмкіндіктер' : isRu ? 'Возможности' : 'Opportunities', status: demoLabel },
+    { to: '/passport', icon: IQr, label: isKz ? 'Цифрлық паспорт' : isRu ? 'Цифровой паспорт' : 'Digital passport', status: demoLabel },
   ]
 
   const bottomItems = [
@@ -189,7 +164,7 @@ export function Sidebar() {
 
   return (
     <aside className="hidden lg:flex fixed top-0 left-0 bottom-0 w-56 flex-col justify-between border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 z-40">
-      <div>
+      <div className="min-h-0 overflow-y-auto pr-1">
         {/* Brand */}
         <div className="mb-6 flex items-center justify-between px-2 pt-1">
           <NavLink to="/home" className="flex items-center gap-2">
@@ -234,9 +209,20 @@ export function Sidebar() {
 
         {/* Main Menu */}
         <div className="space-y-1">
-          {mainItems.map((item) => (
+          {coreItems.map((item) => (
             <NavItem key={item.to} {...item} />
           ))}
+        </div>
+
+        <div className="mt-5">
+          <p className="mb-1.5 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+            {isKz ? 'Зертхана' : isRu ? 'Лаборатория' : 'Labs'}
+          </p>
+          <div className="space-y-1">
+            {labItems.map((item) => (
+              <NavItem key={item.to} {...item} />
+            ))}
+          </div>
         </div>
       </div>
 

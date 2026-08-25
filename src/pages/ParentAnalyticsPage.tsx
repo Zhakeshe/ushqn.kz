@@ -4,6 +4,7 @@ import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
+import { FeatureStatusNotice } from '../components/FeatureStatusNotice'
 
 export function ParentAnalyticsPage() {
   const { i18n } = useTranslation()
@@ -30,6 +31,8 @@ export function ParentAnalyticsPage() {
             <span>{isKz ? 'Дэшбордқа қайту' : isRu ? 'Назад в дэшборд' : 'Back to Dashboard'}</span>
           </Link>
         </div>
+
+        <FeatureStatusNotice />
 
         <ParentTalentReport />
       </div>

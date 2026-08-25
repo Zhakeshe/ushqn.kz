@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
@@ -151,6 +151,7 @@ export function ProfilePage() {
       accent_color: '#0052CC',
     },
   })
+  const accentColor = useWatch({ control: form.control, name: 'accent_color' })
 
   useEffect(() => {
     const p = profileQuery.data
@@ -555,7 +556,6 @@ export function ProfilePage() {
                 <p className="text-xs text-[#64748b]">{t('profile.edit.accentHint')}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {ACCENT_PRESETS.map((c) => {
-                    const cur = form.watch('accent_color')
                     return (
                       <button
                         key={c}
@@ -563,7 +563,7 @@ export function ProfilePage() {
                         title={c}
                         onClick={() => form.setValue('accent_color', c, { shouldDirty: true })}
                         className={`h-9 w-9 rounded-full ring-2 ring-offset-2 transition ${
-                          cur === c ? 'ring-[#0f172a]' : 'ring-transparent hover:ring-[#94a3b8]'
+                          accentColor === c ? 'ring-[#0f172a]' : 'ring-transparent hover:ring-[#94a3b8]'
                         }`}
                         style={{ backgroundColor: c }}
                       />
@@ -574,7 +574,7 @@ export function ProfilePage() {
                 <input
                   type="color"
                   className="mt-3 h-10 w-14 cursor-pointer rounded border border-[#DFE1E6] bg-white p-0"
-                  value={isValidAccentHex(form.watch('accent_color')) ? form.watch('accent_color') : '#0052CC'}
+                  value={isValidAccentHex(accentColor) ? accentColor : '#0052CC'}
                   onChange={(e) =>
                     form.setValue('accent_color', e.target.value, { shouldDirty: true, shouldValidate: true })
                   }

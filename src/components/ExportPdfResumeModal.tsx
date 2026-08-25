@@ -11,8 +11,6 @@ import {
   Mail,
   Loader2,
 } from 'lucide-react'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 
 export interface ResumeData {
   name: string
@@ -64,6 +62,10 @@ export function ExportPdfResumeModal({ data, onClose }: ExportPdfResumeModalProp
     if (!printRef.current) return
     setIsGenerating(true)
     try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
       // High-res canvas rendering
       const canvas = await html2canvas(printRef.current, {
         scale: 2.5,

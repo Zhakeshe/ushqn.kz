@@ -262,7 +262,7 @@ export function HomePage() {
                   {p?.display_name || (isKz ? 'Алихан Бахытулы' : 'Алихан Бахытулы')}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {p?.grade ? `${p.grade} ${isKz ? 'сынып' : isRu ? 'класс' : 'grade'}` : (isKz ? '10 сынып' : isRu ? '10 класс' : '10th grade')} · {p?.city || (isKz ? 'Робототехника & IT' : 'Робототехника & IT')}
+                  {p?.school_or_org || (isKz ? 'Оқу орны көрсетілмеген' : isRu ? 'Учебное заведение не указано' : 'School not specified')} · {p?.location || (isKz ? 'Орналасу көрсетілмеген' : isRu ? 'Город не указан' : 'Location not specified')}
                 </p>
               </div>
 

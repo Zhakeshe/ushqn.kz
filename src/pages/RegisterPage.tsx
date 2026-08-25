@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
@@ -99,14 +99,14 @@ export function RegisterPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: { role: 'student' },
   })
 
-  const passwordValue = watch('password') ?? ''
+  const passwordValue = useWatch({ control, name: 'password' }) ?? ''
 
   async function signInWithGoogle() {
     setGoogleLoading(true)

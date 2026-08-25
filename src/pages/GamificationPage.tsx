@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
+import { FeatureStatusNotice } from '../components/FeatureStatusNotice'
 
 export function GamificationPage() {
   const { i18n } = useTranslation()
@@ -48,6 +49,8 @@ export function GamificationPage() {
             <span>{isKz ? 'Дэшбордқа қайту' : isRu ? 'Назад в дэшборд' : 'Back to Dashboard'}</span>
           </Link>
         </div>
+
+        <FeatureStatusNotice />
 
         {/* Tab Toggle */}
         <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-slate-900 shadow-2xs">

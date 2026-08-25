@@ -1,33 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { useEffect } from 'react'
-import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useChatUnreadCount } from '../hooks/useUnreadCounts'
 import { Home, Briefcase, Users, MessageSquare, User } from 'lucide-react'
 
 export function MobileNav() {
   const { userId } = useAuth()
   const { t } = useTranslation()
-  const qc = useQueryClient()
-
-  const { data: unreadCount } = useQuery({
-    queryKey: ['notif-count', userId],
-    enabled: Boolean(userId),
-    refetchInterval: 30_000,
-    queryFn: async () => {
-      const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', userId!).eq('is_read', false)
-      return count ?? 0
-    },
-  })
-
-  useEffect(() => {
-    if (!userId) return
-    const channel = supabase.channel(`notif-live-mobile:${userId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => {
-      void qc.invalidateQueries({ queryKey: ['notif-count', userId] })
-    }).subscribe()
-    return () => { void supabase.removeChannel(channel) }
-  }, [userId, qc])
+  const { data: unreadCount } = useChatUnreadCount(userId)
 
   const navItems = [
     { to: '/home', label: t('nav.home'), icon: Home },

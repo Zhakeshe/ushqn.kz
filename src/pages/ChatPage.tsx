@@ -861,8 +861,11 @@ export function ChatPage() {
   })
 
   const peerReadAt = peerReadQuery.data ? new Date(peerReadQuery.data).getTime() : null
-  const nameById = membersQuery.data?.byId ?? new Map<string, string>()
-  const avatarById = membersQuery.data?.avatarById ?? new Map<string, string | null>()
+  const nameById = useMemo(() => membersQuery.data?.byId ?? new Map<string, string>(), [membersQuery.data?.byId])
+  const avatarById = useMemo(
+    () => membersQuery.data?.avatarById ?? new Map<string, string | null>(),
+    [membersQuery.data?.avatarById],
+  )
   const memberCount = membersQuery.data?.ids.length ?? 0
 
   const messagesWithDividers = useMemo((): ChatTimelineItem[] => {

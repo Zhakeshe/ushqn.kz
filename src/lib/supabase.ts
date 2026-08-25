@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '../types/database'
 
 const rawUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim()
 const rawAnon = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim()
@@ -18,7 +19,7 @@ const fallbackAnon =
 const targetUrl = rawUrl && rawUrl.length > 8 && rawUrl.startsWith('http') ? rawUrl : fallbackUrl
 const targetAnon = rawAnon && rawAnon.length > 10 ? rawAnon : fallbackAnon
 
-export const supabase = createClient(targetUrl, targetAnon, {
+export const supabase = createClient<Database>(targetUrl, targetAnon, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
