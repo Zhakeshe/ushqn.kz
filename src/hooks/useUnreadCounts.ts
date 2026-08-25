@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useNotificationUnreadCount(userId: string | null) {
+export function useNotificationUnreadCount(userId: string | null, realtime = false) {
   const queryClient = useQueryClient()
   const query = useQuery({
     queryKey: ['notif-count', userId],
@@ -20,7 +20,7 @@ export function useNotificationUnreadCount(userId: string | null) {
   })
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId || !realtime) return
     const channel = supabase
       .channel(`notification-count:${userId}`)
       .on(
@@ -32,7 +32,7 @@ export function useNotificationUnreadCount(userId: string | null) {
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [queryClient, userId])
+  }, [queryClient, realtime, userId])
 
   return query
 }

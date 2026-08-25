@@ -16,7 +16,9 @@ function TopBar() {
   const { t, i18n } = useTranslation()
   const { userId } = useAuth()
   const navigate = useNavigate()
-  const { data: unread } = useNotificationUnreadCount(userId)
+  // TopBar is always mounted (CSS only hides it on desktop), so it owns the
+  // single realtime subscription shared through React Query with the sidebar.
+  const { data: unread } = useNotificationUnreadCount(userId, true)
 
   const badge = (unread ?? 0) > 0 ? Math.min(unread ?? 0, 99) : null
 
