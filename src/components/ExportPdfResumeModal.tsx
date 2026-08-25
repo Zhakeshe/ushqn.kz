@@ -371,7 +371,9 @@ export function ExportPdfResumeModal({ data, onClose }: ExportPdfResumeModalProp
                     </div>
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-slate-600">{isKz ? 'Ел рейтингінде:' : 'В рейтинге:'}</span>
-                      <span className="font-bold text-slate-900">ТОП {data.topPercentile}% (#{data.leaderboardRank})</span>
+                      <span className="font-bold text-slate-900">
+                        {data.leaderboardRank > 0 ? `ТОП ${data.topPercentile}% (#${data.leaderboardRank})` : '—'}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-slate-600">{isKz ? 'Расталған құжат:' : 'Верифицировано:'}</span>

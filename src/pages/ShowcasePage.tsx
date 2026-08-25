@@ -265,7 +265,7 @@ export function ShowcasePage() {
               <label className="ushqn-label">{t('showcase.imageLabel')}</label>
               <label className="mt-1 flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-dashed border-[#DFE1E6] bg-[#fafbfc] px-3 py-2.5 text-sm text-[#6B778C] transition hover:border-[#6554C0] hover:text-[#6554C0]">
                 📷 {image ? image.name : t('showcase.uploadImagePh')}
-                <input type="file" accept="image/*" className="sr-only" onChange={(e) => setImage(e.target.files?.[0] ?? null)} />
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={(e) => setImage(e.target.files?.[0] ?? null)} />
               </label>
             </div>
             <div className="flex gap-3 sm:col-span-2">

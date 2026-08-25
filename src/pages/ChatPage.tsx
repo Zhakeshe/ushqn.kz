@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { supabase } from '../lib/supabase'
 import { sanitizeUserText } from '../lib/sanitize'
-import { uploadPublicFile } from '../lib/upload'
+import { ALLOWED_UPLOAD_TYPES, uploadPublicFile } from '../lib/upload'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { ContentReportDialog } from '../components/ContentReportDialog'
 import { useToast } from '../lib/toast'
@@ -1489,6 +1489,7 @@ export function ChatPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
+                  accept={ALLOWED_UPLOAD_TYPES.join(',')}
                   className="sr-only"
                   onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)}
                 />

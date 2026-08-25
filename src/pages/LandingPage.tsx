@@ -25,7 +25,6 @@ import {
   Rocket,
   ShieldCheck,
   Sparkles,
-  Star,
   Trophy,
   Zap,
   Sun,
@@ -65,7 +64,7 @@ const LANGS = [
   { code: 'en', label: 'Eng', full: 'English' },
 ]
 
-function StatCounter({ n, suffix, label }: { n: number; suffix: string; label: string }) {
+function StatCounter({ n, suffix = '', label }: { n: number; suffix?: string; label: string }) {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
@@ -124,15 +123,13 @@ export function LandingPage() {
     queryFn: async () => {
       const [pRes, aRes] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('achievements').select('*', { count: 'exact', head: true }),
+        supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('verification_status', 'verified'),
       ])
       const totalStudents = pRes.count ?? 0
       const totalAch = aRes.count ?? 0
       return {
-        students: Math.max(totalStudents, 12),
-        achievements: Math.max(totalAch, 24),
-        universities: 40,
-        grantsRate: 100,
+        students: totalStudents,
+        achievements: totalAch,
       }
     },
     refetchInterval: 30000,
@@ -154,6 +151,7 @@ export function LandingPage() {
       const { data } = await supabase
         .from('achievements')
         .select('id, title, points_awarded, created_at, user_id')
+        .eq('verification_status', 'verified')
         .order('created_at', { ascending: false })
         .limit(4)
       return data ?? []
@@ -466,7 +464,6 @@ export function LandingPage() {
     { href: '#roadmap-demo', label: isKz ? 'AI Ментор' : isEn ? 'AI Mentor' : 'AI Ментор' },
     { href: '#personas', label: isKz ? 'Кімге арналған' : isEn ? 'For Whom' : 'Для кого' },
     { href: '#how', label: isKz ? 'Қалай бастау' : isEn ? 'How It Works' : 'Как начать' },
-    { href: '#stories', label: isKz ? 'Пікірлер' : isEn ? 'Reviews' : 'Отзывы' },
   ]
 
   const CTA_CHECKS = [
@@ -735,17 +732,17 @@ export function LandingPage() {
                           <span>🧑‍🎓</span>
                         )}
                       </div>
-                      <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                        ✓ {isKz ? 'Верификацияланған' : isEn ? 'Verified' : 'Верифицирован'}
+                      <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        {isKz ? 'Рейтинг көшбасшысы' : isEn ? 'Leaderboard' : 'Лидер рейтинга'}
                       </span>
                     </div>
 
                     <div className="mt-2">
                       <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                        {topTalentQuery.data?.display_name || (isKz ? 'Алихан Бахытулы' : 'Алихан Бахытулы')}
+                        {topTalentQuery.data?.display_name || (isKz ? 'Әзірге рейтинг бос' : isEn ? 'No ranking data yet' : 'Рейтинг пока пуст')}
                       </h3>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {isKz ? '10-сынып оқушысы · Робототехника & IT' : isEn ? 'Grade 10 Student · Robotics & IT' : '10 класс · Робототехника & IT'}
+                        {isKz ? 'Тек расталған ұпайлар есептеледі' : isEn ? 'Only verified points are counted' : 'Учитываются только проверенные баллы'}
                       </p>
                     </div>
 
@@ -755,31 +752,16 @@ export function LandingPage() {
                         <div className="text-lg font-black text-blue-600 dark:text-blue-400">
                           {topTalentQuery.data?.points
                             ? `${topTalentQuery.data.points.toLocaleString()} XP`
-                            : '1,450 XP'}
+                            : '0 XP'}
                         </div>
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           {isKz ? 'USHQN ҰПАЙ' : isEn ? 'USHQN XP' : 'USHQN БАЛЛЫ'}
                         </div>
                       </div>
                       <div className="text-center border-l border-slate-200 dark:border-slate-700">
-                        <div className="text-lg font-black text-slate-900 dark:text-white">ТОП 1%</div>
+                        <div className="text-lg font-black text-slate-900 dark:text-white">—</div>
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           {isKz ? 'РЕЙТИНГТЕ' : isEn ? 'LEADERBOARD' : 'В РЕЙТИНГЕ'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Verified grant snippet */}
-                    <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-2.5 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-900 dark:text-white text-[11px] truncate">
-                            Astana IT University
-                          </div>
-                          <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                            ✓ {isKz ? 'Академиялық грант мақұлданды' : isEn ? 'Academic Grant Approved' : 'Академический грант одобрен'}
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -918,26 +900,14 @@ export function LandingPage() {
         {/* Dynamic Key Stats Counter */}
         <section className="border-y border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900/60 sm:py-10">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-8">
+            <div className="grid grid-cols-2 gap-6 sm:gap-8">
               <StatCounter
-                n={liveStatsQuery.data?.students ?? 12400}
-                suffix="+"
-                label={isKz ? 'Қатысушы оқушылар' : isEn ? 'Active Students' : 'Активных школьников'}
+                n={liveStatsQuery.data?.students ?? 0}
+                label={isKz ? 'Тіркелген профильдер' : isEn ? 'Registered profiles' : 'Зарегистрированные профили'}
               />
               <StatCounter
-                n={liveStatsQuery.data?.achievements ?? 850}
-                suffix="+"
-                label={isKz ? 'Расталған жетістіктер' : isEn ? 'Verified Projects' : 'Верифицированных проектов'}
-              />
-              <StatCounter
-                n={liveStatsQuery.data?.universities ?? 40}
-                suffix="+"
-                label={isKz ? 'Серіктес ЖОО және қорлар' : isEn ? 'Partner Universities' : 'Партнерских вузов и фондов'}
-              />
-              <StatCounter
-                n={liveStatsQuery.data?.grantsRate ?? 100}
-                suffix="%"
-                label={isKz ? 'Тегін бастапқы мүмкіндік' : isEn ? 'Free Start' : 'Бесплатный старт'}
+                n={liveStatsQuery.data?.achievements ?? 0}
+                label={isKz ? 'Расталған жетістіктер' : isEn ? 'Verified achievements' : 'Проверенные достижения'}
               />
             </div>
 
@@ -950,22 +920,17 @@ export function LandingPage() {
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                   </span>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    {isKz ? 'Нақты уақыттағы растау ағыны (Real-Time Live)' : isRu ? 'Живой поток верификаций (Real-Time Live)' : 'Live Real-Time Verification Stream'}
+                    {isKz ? 'Соңғы расталған жетістіктер' : isRu ? 'Последние проверенные достижения' : 'Recently verified achievements'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                   <Activity className="h-3.5 w-3.5" />
-                  <span>{isKz ? 'Синхрондалған' : isRu ? 'Синхронизировано' : 'Live Synced'}</span>
+                  <span>{isKz ? 'Дерекқордан' : isRu ? 'Из базы данных' : 'From the database'}</span>
                 </div>
               </div>
 
               <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {(liveFeedQuery.data && liveFeedQuery.data.length > 0 ? liveFeedQuery.data : [
-                  { id: '1', title: isKz ? 'FIRST Global Robotics Жеңімпазы' : 'Победитель FIRST Global Robotics', category: 'olympiad', points_awarded: 450, created_at: new Date().toISOString() },
-                  { id: '2', title: isKz ? 'IELTS 7.5 Академиялық Сертификат' : 'IELTS 7.5 Академический Сертификат', category: 'language', points_awarded: 300, created_at: new Date().toISOString() },
-                  { id: '3', title: isKz ? 'Daryn Республикалық Олимпиада 1-орын' : 'Daryn Респ. Олимпиада 1 место', category: 'olympiad', points_awarded: 500, created_at: new Date().toISOString() },
-                  { id: '4', title: isKz ? 'Astana Hub Hackathon 1-орын' : 'Astana Hub Hackathon 1 место', category: 'project', points_awarded: 400, created_at: new Date().toISOString() },
-                ]).slice(0, 4).map((item, idx) => (
+                {(liveFeedQuery.data ?? []).slice(0, 4).map((item, idx) => (
                   <div
                     key={item.id || idx}
                     className="flex items-center justify-between rounded-xl border border-slate-200/60 bg-white p-2.5 shadow-2xs dark:border-slate-800 dark:bg-slate-800/80"
@@ -982,10 +947,15 @@ export function LandingPage() {
                       </span>
                     </div>
                     <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-0.5 text-[11px] font-black text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
-                      +{item.points_awarded || 300} XP
+                      +{item.points_awarded} XP
                     </span>
                   </div>
                 ))}
+                {!liveFeedQuery.isLoading && (liveFeedQuery.data?.length ?? 0) === 0 ? (
+                  <p className="col-span-full py-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                    {isKz ? 'Әзірге расталған жетістіктер жоқ.' : isRu ? 'Проверенных достижений пока нет.' : 'No verified achievements yet.'}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1271,79 +1241,6 @@ export function LandingPage() {
                   </motion.div>
                 )
               })}
-            </div>
-          </div>
-        </section>
-
-        {/* Reviews Section */}
-        <section id="stories" className="py-16 sm:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="max-w-2xl">
-              <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                {isKz ? 'Қатысушылар пікірі' : isEn ? 'Community Reviews' : 'Отзывы участников'}
-              </div>
-              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
-                {isKz ? 'Оқушылар мен ұстаздар не дейді?' : isEn ? 'What students & teachers say' : 'Что говорят школьники и педагоги'}
-              </h2>
-            </div>
-
-            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  name: isKz ? 'Әлия Н.' : 'Алия Н.',
-                  role: isKz ? '11-сынып, Алматы (Astana IT University грант иегері)' : '11 класс, Алматы (Грант в AITU)',
-                  text: isKz
-                    ? 'USHQN-дағы расталған портфолио менің барлық хакатондарымды жүйелеп, грант алуыма тікелей көмектесті!'
-                    : 'QR-паспорт объединил все мои грамоты и победы в хакатонах, а университет сам связался со мной.',
-                  score: 'Lvl 18 · 4,840 XP',
-                },
-                {
-                  name: isKz ? 'Данияр С.' : 'Данияр С.',
-                  role: isKz ? '10-сынып, Шымкент (WRO қатысушысы)' : '10 класс, Шымкент (Участник WRO)',
-                  text: isKz
-                    ? 'AI Ментор маған робототехника бойынша қандай олимпиадаларға қатысу керектігін нақты есептеп берді.'
-                    : 'AI Ментор точно рассчитал роадмап: в каких олимпиадах участвовать и как системно поднять баллы.',
-                  score: 'Lvl 14 · 3,120 XP',
-                },
-                {
-                  name: isKz ? 'Марина К.' : 'Марина К.',
-                  role: isKz ? 'Информатика пәні мұғалімі, ментор' : 'Учитель информатики, ментор',
-                  text: isKz
-                    ? 'Оқушылардың барлық ғылыми жобаларын бір жерде көру және оларды ынталандыру өте ыңғайлы болды.'
-                    : 'Очень удобно отслеживать успеваемость и практические достижения своих учеников в единой системе.',
-                  score: 'Verified Mentor',
-                },
-              ].map((story, i) => (
-                <motion.div
-                  key={story.name}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.35, delay: i * 0.08 }}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div>
-                    <div className="flex items-center gap-1 text-amber-400">
-                      {[...Array(5)].map((_, idx) => (
-                        <Star key={idx} className="h-3.5 w-3.5 fill-amber-400" />
-                      ))}
-                    </div>
-                    <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 italic">
-                      «{story.text}»
-                    </p>
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
-                    <div>
-                      <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">{story.name}</div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400">{story.role}</div>
-                    </div>
-                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                      {story.score}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
             </div>
           </div>
         </section>

@@ -183,7 +183,7 @@ export function AdminPage() {
       const catMap = new Map((cats ?? []).map((c) => [c.id, c]))
       const profMap = new Map((profiles ?? []).map((p) => [p.id, p]))
 
-      return (achs ?? []).map((a) => {
+      return Promise.all((achs ?? []).map(async (a) => {
         const cat = catMap.get(a.category_id)
         const prof = profMap.get(a.user_id)
         return {
@@ -195,9 +195,13 @@ export function AdminPage() {
           user_grade: prof?.role ?? 'student',
           user_school: prof?.school_or_org ?? prof?.location ?? '—',
           user_avatar: prof?.avatar_url ?? null,
-          file_url: a.file_path ? supabase.storage.from('uploads').getPublicUrl(a.file_path).data.publicUrl : null,
+          file_url: a.file_path
+            ? a.file_bucket === 'evidence'
+              ? (await supabase.storage.from('evidence').createSignedUrl(a.file_path, 60 * 10)).data?.signedUrl ?? null
+              : supabase.storage.from('uploads').getPublicUrl(a.file_path).data.publicUrl
+            : null,
         }
-      })
+      }))
     },
   })
 
@@ -208,7 +212,7 @@ export function AdminPage() {
       const [{ data: profs, error: e1 }, { data: scores, error: e2 }, { data: achs, error: e3 }] = await Promise.all([
         supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(120),
         supabase.from('user_category_scores').select('user_id, points'),
-        supabase.from('achievements').select('user_id, id'),
+        supabase.from('achievements').select('user_id, id, verification_status').eq('verification_status', 'verified'),
       ])
       if (e1) throw e1
       if (e2) throw e2
@@ -224,12 +228,11 @@ export function AdminPage() {
       }
 
       return (profs ?? []).map((p) => {
-        const totalXp = scoresByUser.get(p.id) || 1200 + ((p.id.charCodeAt(0) * 17) % 800)
+        const totalXp = scoresByUser.get(p.id) ?? 0
         return {
           ...p,
           totalXp,
           verifiedCount: countByUser.get(p.id) ?? 0,
-          isGrantEligible: totalXp >= 1400,
         }
       })
     },
@@ -237,7 +240,11 @@ export function AdminPage() {
 
   const verifyAchievement = useMutation({
     mutationFn: async ({ id, points }: { id: string; points: number }) => {
-      const { error } = await supabase.from('achievements').update({ points_awarded: points }).eq('id', id)
+      const { error } = await supabase.rpc('review_achievement', {
+        p_achievement_id: id,
+        p_status: 'verified',
+        p_points: points,
+      })
       if (error) throw error
     },
     onSuccess: () => {
@@ -252,7 +259,11 @@ export function AdminPage() {
 
   const rejectAchievement = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('achievements').delete().eq('id', id)
+      const { error } = await supabase.rpc('review_achievement', {
+        p_achievement_id: id,
+        p_status: 'rejected',
+        p_reason: isKz ? 'Құжат тексеруден өтпеді' : 'Документ не прошёл проверку',
+      })
       if (error) throw error
     },
     onSuccess: () => {
@@ -797,7 +808,7 @@ export function AdminPage() {
                 }`}
               >
                 ⏳ {isKz ? 'Қаралуда / Күтуде' : 'На проверке'} (
-                {verificationQuery.data?.filter((a) => !a.points_awarded || a.points_awarded === 0).length ?? 0})
+                {verificationQuery.data?.filter((a) => a.verification_status === 'pending').length ?? 0})
               </button>
               <button
                 type="button"
@@ -809,7 +820,7 @@ export function AdminPage() {
                 }`}
               >
                 ✓ {isKz ? 'Расталғандар' : 'Верифицированные'} (
-                {verificationQuery.data?.filter((a) => a.points_awarded && a.points_awarded > 0).length ?? 0})
+                {verificationQuery.data?.filter((a) => a.verification_status === 'verified').length ?? 0})
               </button>
             </div>
 
@@ -839,12 +850,12 @@ export function AdminPage() {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {(verificationQuery.data ?? [])
                       .filter((item) => {
-                        if (verificationFilter === 'pending') return !item.points_awarded || item.points_awarded === 0
-                        if (verificationFilter === 'verified') return item.points_awarded && item.points_awarded > 0
+                        if (verificationFilter === 'pending') return item.verification_status === 'pending'
+                        if (verificationFilter === 'verified') return item.verification_status === 'verified'
                         return true
                       })
                       .map((item) => {
-                        const isVerified = Boolean(item.points_awarded && item.points_awarded > 0)
+                        const isVerified = item.verification_status === 'verified'
                         return (
                           <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                             <td className="px-4 py-3">
@@ -977,14 +988,17 @@ export function AdminPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
               <span className="text-[11px] font-bold uppercase text-slate-400">{isKz ? 'Орташа Ұпай (XP)' : 'Средний XP'}</span>
               <div className="mt-1 text-2xl font-black text-blue-600 dark:text-blue-400">
-                1,380 XP
+                {Math.round(
+                  (curatorQuery.data ?? []).reduce((sum, student) => sum + student.totalXp, 0) /
+                    Math.max(curatorQuery.data?.length ?? 0, 1),
+                ).toLocaleString()} XP
               </div>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
-              <span className="text-[11px] font-bold uppercase text-slate-400">{isKz ? 'Грант Үміткерлері' : 'Претенденты на Грант'}</span>
+              <span className="text-[11px] font-bold uppercase text-slate-400">{isKz ? 'Ұпайы бар оқушылар' : 'Ученики с баллами'}</span>
               <div className="mt-1 text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                {curatorQuery.data?.filter((s) => s.isGrantEligible).length ?? 0}
+                {curatorQuery.data?.filter((s) => s.totalXp > 0).length ?? 0}
               </div>
             </div>
 
@@ -1031,9 +1045,9 @@ export function AdminPage() {
             <button
               type="button"
               onClick={() => {
-                const header = ['ID', 'Аты-жөні', 'Сынып', 'Мектеп', 'XP', 'Расталған Дипломдар', 'Грантқа Дайындық'].join(',')
+                const header = ['ID', 'Аты-жөні', 'Сынып', 'Мектеп', 'XP', 'Расталған Дипломдар'].join(',')
                 const rows = (curatorQuery.data ?? []).map((s) =>
-                  [s.id, csvEscape(s.display_name), s.role, csvEscape(s.school_or_org || '—'), s.totalXp, s.verifiedCount, s.isGrantEligible ? 'Иә' : 'Жоқ'].join(','),
+                  [s.id, csvEscape(s.display_name), s.role, csvEscape(s.school_or_org || '—'), s.totalXp, s.verifiedCount].join(','),
                 )
                 downloadTextFile(`USHQN_School_Report_${Date.now()}.csv`, [header, ...rows].join('\n'))
                 toast(isKz ? 'Есептеме CSV форматында жүктелді' : 'Отчет выгружен в CSV')
@@ -1057,7 +1071,6 @@ export function AdminPage() {
                       <th className="px-4 py-3">{isKz ? 'Сынып & Мектеп' : 'Класс & Школа'}</th>
                       <th className="px-4 py-3">{isKz ? 'USHQN Ұпайы (XP)' : 'USHQN Баллы (XP)'}</th>
                       <th className="px-4 py-3">{isKz ? 'Расталған құжаттар' : 'Дипломы'}</th>
-                      <th className="px-4 py-3">{isKz ? 'Грант Оффері' : 'Грантовый Оффер'}</th>
                       <th className="px-4 py-3 text-right">{isKz ? 'Профиль' : 'Профиль'}</th>
                     </tr>
                   </thead>
@@ -1081,15 +1094,6 @@ export function AdminPage() {
                         </td>
                         <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">
                           {st.verifiedCount} {isKz ? 'диплом' : 'диплома'}
-                        </td>
-                        <td className="px-4 py-3">
-                          {st.isGrantEligible ? (
-                            <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                              Astana IT (100% Грант)
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-slate-400">Дайындық кезеңінде</span>
-                          )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Link

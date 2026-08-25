@@ -12,6 +12,7 @@ export type JobApplicationStatus =
   | 'withdrawn'
 export type JobWorkMode = 'any' | 'remote' | 'onsite' | 'hybrid'
 export type JobVacancyStatus = 'open' | 'filled' | 'closed_not_needed' | 'closed_other'
+export type AchievementVerificationStatus = 'pending' | 'verified' | 'rejected'
 
 interface DatabaseShape {
   public: {
@@ -194,7 +195,12 @@ interface DatabaseShape {
           title: string
           description: string | null
           file_path: string | null
+          file_bucket: 'uploads' | 'evidence'
           points_awarded: number
+          verification_status: AchievementVerificationStatus
+          verified_by: string | null
+          verified_at: string | null
+          rejection_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -204,6 +210,7 @@ interface DatabaseShape {
           title: string
           description?: string | null
           file_path?: string | null
+          file_bucket?: 'uploads' | 'evidence'
         }
         Update: Partial<Omit<Database['public']['Tables']['achievements']['Row'], 'id' | 'user_id'>>
       }
@@ -647,6 +654,15 @@ interface DatabaseShape {
       remove_teacher_group_member: {
         Args: { p_group_id: string; p_student_id: string }
         Returns: void
+      }
+      review_achievement: {
+        Args: {
+          p_achievement_id: string
+          p_status: 'verified' | 'rejected'
+          p_points?: number | null
+          p_reason?: string | null
+        }
+        Returns: unknown
       }
       create_student_invite: {
         Args: { p_link_type: 'parent' | 'teacher' }

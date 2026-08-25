@@ -217,19 +217,27 @@ export function ProfilePage() {
   async function onAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || !userId) return
-    const url = await uploadPublicFile(userId, `avatars/${Date.now()}-${file.name}`, file)
-    if (!url) return
-    const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId)
-    if (!error) void qc.invalidateQueries({ queryKey: ['profile', userId] })
+    try {
+      const url = await uploadPublicFile(userId, `avatars/${Date.now()}-${file.name}`, file)
+      const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId)
+      if (error) throw error
+      void qc.invalidateQueries({ queryKey: ['profile', userId] })
+    } catch (error) {
+      toast(formatSupabaseError(error, t), 'error')
+    }
   }
 
   async function onBannerChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || !userId) return
-    const url = await uploadPublicFile(userId, `banners/${Date.now()}-${file.name}`, file)
-    if (!url) return
-    const { error } = await supabase.from('profiles').update({ banner_url: url }).eq('id', userId)
-    if (!error) void qc.invalidateQueries({ queryKey: ['profile', userId] })
+    try {
+      const url = await uploadPublicFile(userId, `banners/${Date.now()}-${file.name}`, file)
+      const { error } = await supabase.from('profiles').update({ banner_url: url }).eq('id', userId)
+      if (error) throw error
+      void qc.invalidateQueries({ queryKey: ['profile', userId] })
+    } catch (error) {
+      toast(formatSupabaseError(error, t), 'error')
+    }
   }
 
   async function clearBanner() {
@@ -527,7 +535,7 @@ export function ProfilePage() {
                       <path d="M8 0a5.5 5.5 0 1 1 0 11A5.5 5.5 0 0 1 8 0Zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"/>
                     </svg>
                     {t('profile.edit.upload')}
-                    <input type="file" accept="image/*" className="sr-only" onChange={onAvatarChange} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={onAvatarChange} />
                   </label>
                 </div>
                 <div>
@@ -537,7 +545,7 @@ export function ProfilePage() {
                       <path d="M1.5 2h13A1.5 1.5 0 0 1 16 3.5v9A1.5 1.5 0 0 1 14.5 14h-13A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2ZM1.5 3a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-13Z"/>
                     </svg>
                     {t('profile.edit.upload')}
-                    <input type="file" accept="image/*" className="sr-only" onChange={onBannerChange} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={onBannerChange} />
                   </label>
                   {p.banner_url ? (
                     <button

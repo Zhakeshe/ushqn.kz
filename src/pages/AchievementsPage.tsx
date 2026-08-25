@@ -11,9 +11,9 @@ import { useConfirm } from '../lib/confirm'
 import { format } from 'date-fns'
 import { getDateFnsLocale } from '../lib/dateLocale'
 import { AppPageMeta } from '../components/AppPageMeta'
-import { SmartCertificateScanner, type ScannedCertificateResult } from '../components/SmartCertificateScanner'
 import { ExportPdfResumeModal, type ResumeData } from '../components/ExportPdfResumeModal'
-import { Sparkles, PlusCircle, Download } from 'lucide-react'
+import { PlusCircle, Download } from 'lucide-react'
+import { ALLOWED_UPLOAD_TYPES, uploadPrivateEvidence, validateUpload } from '../lib/upload'
 
 const CATEGORY_EMOJI: Record<string, string> = {
   robotics: '🤖', programming: '💻', sports: '⚽', debates: '🎤',
@@ -32,7 +32,6 @@ export function AchievementsPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
-  const [showScanner, setShowScanner] = useState(false)
   const [showPdfModal, setShowPdfModal] = useState(false)
 
   type Form = { title: string; description?: string; category_id: string }
@@ -69,18 +68,27 @@ export function AchievementsPage() {
     enabled: Boolean(userId),
     queryFn: async () => {
       const [{ data: rows, error: e1 }, { data: cats, error: e2 }] = await Promise.all([
-        supabase.from('achievements').select('id,title,description,category_id,file_path,points_awarded,created_at').eq('user_id', userId!).order('created_at', { ascending: false }),
+        supabase.from('achievements').select('id,title,description,category_id,file_path,file_bucket,points_awarded,verification_status,rejection_reason,created_at').eq('user_id', userId!).order('created_at', { ascending: false }),
         supabase.from('achievement_categories').select('id,label_ru,slug'),
       ])
       if (e1) throw e1
       if (e2) throw e2
       const labels = new Map((cats ?? []).map((c) => [c.id, c.label_ru]))
       const slugs = new Map((cats ?? []).map((c) => [c.id, c.slug as string]))
-      return (rows ?? []).map((r) => ({
-        ...r,
-        category_label: labels.get(r.category_id) ?? '—',
-        category_slug: slugs.get(r.category_id) ?? 'other',
-        file_url: r.file_path ? supabase.storage.from('uploads').getPublicUrl(r.file_path).data.publicUrl : null,
+      return Promise.all((rows ?? []).map(async (r) => {
+        const signed = r.file_path && r.file_bucket === 'evidence'
+          ? await supabase.storage.from('evidence').createSignedUrl(r.file_path, 60 * 10)
+          : null
+        return {
+          ...r,
+          category_label: labels.get(r.category_id) ?? '—',
+          category_slug: slugs.get(r.category_id) ?? 'other',
+          file_url: signed?.data?.signedUrl ?? (
+            r.file_path && r.file_bucket === 'uploads'
+              ? supabase.storage.from('uploads').getPublicUrl(r.file_path).data.publicUrl
+              : null
+          ),
+        }
       }))
     },
   })
@@ -114,13 +122,11 @@ export function AchievementsPage() {
     mutationFn: async (values: Form) => {
       let filePath: string | null = null
       if (file && userId) {
-        filePath = `${userId}/achievements/${Date.now()}-${file.name}`.replace(/\/+/g, '/')
-        const { error: upErr } = await supabase.storage.from('uploads').upload(filePath, file)
-        if (upErr) throw upErr
+        filePath = await uploadPrivateEvidence(userId, `achievements/${Date.now()}-${file.name}`, file)
       }
       const { error } = await supabase.from('achievements').insert({
         user_id: userId!, category_id: values.category_id,
-        title: values.title, description: values.description || null, file_path: filePath,
+        title: values.title, description: values.description || null, file_path: filePath, file_bucket: 'evidence',
       })
       if (error) throw error
     },
@@ -128,31 +134,14 @@ export function AchievementsPage() {
       form.reset({ title: '', description: '', category_id: categoriesQuery.data?.[0]?.id ?? '' })
       setFile(null)
       setShowForm(false)
-      setShowScanner(false)
       void qc.invalidateQueries({ queryKey: ['achievements', userId] })
       void qc.invalidateQueries({ queryKey: ['scores', userId] })
       void qc.invalidateQueries({ queryKey: ['leaderboard'] })
       void qc.invalidateQueries({ queryKey: ['total-points', userId] })
       toast(t('achievements.toastAdded'))
     },
-    onError: () => toast(t('achievements.toastSaveErr'), 'error'),
+    onError: (error) => toast(error instanceof Error ? error.message : t('achievements.toastSaveErr'), 'error'),
   })
-
-  function handleScannerResult(result: ScannedCertificateResult, rawFile: File) {
-    setFile(rawFile)
-    setShowForm(true)
-    setShowScanner(false)
-
-    // Find category ID matching the slug
-    const matchingCat = categoriesQuery.data?.find((c) => c.slug === result.categorySlug || c.slug === 'other')
-    if (matchingCat) {
-      form.setValue('category_id', matchingCat.id)
-    }
-
-    form.setValue('title', `${result.title} — ${result.placement}`)
-    form.setValue('description', `${result.issuer} (${result.date}). ${result.summary}`)
-    toast(isKz ? 'AI Диплом мәліметтері сәтті енгізілді!' : 'Данные диплома автоматически распознаны и заполнены!', 'info')
-  }
 
   async function remove(id: string, title: string) {
     const ok = await confirm({
@@ -175,25 +164,25 @@ export function AchievementsPage() {
   const resumeData: ResumeData = useMemo(() => {
     const p = profileQuery.data
     return {
-      name: p?.display_name || (isKz ? 'Әлішер Төлеубаев' : 'Алишер Толеубаев'),
-      studentId: p?.id ? `USH-KZ-2026-${p.id.slice(0, 4).toUpperCase()}` : 'USH-KZ-2026-8941',
+      name: p?.display_name || (isKz ? 'Аты көрсетілмеген' : 'Имя не указано'),
+      studentId: p?.id ? `USH-KZ-${p.id.slice(0, 8).toUpperCase()}` : '—',
       school: p?.school_or_org || undefined,
       city: p?.location || undefined,
       bio: p?.bio || undefined,
-      totalXp: totalPoints > 0 ? totalPoints : 1450,
-      leaderboardRank: 12,
-      topPercentile: 2,
-      verifiedCount: (listQuery.data ?? []).length,
+      totalXp: totalPoints,
+      leaderboardRank: 0,
+      topPercentile: 0,
+      verifiedCount: (listQuery.data ?? []).filter((a) => a.verification_status === 'verified').length,
       achievements: (listQuery.data ?? []).map((a) => ({
         id: a.id,
         title: a.title,
         category: a.category_label,
-        points: a.points_awarded || 300,
+        points: a.points_awarded,
         date: a.created_at ? format(new Date(a.created_at), 'dd.MM.yyyy') : '2026',
-        issuer: 'Ресми олимпиада',
-        isVerified: true,
+        issuer: a.category_label,
+        isVerified: a.verification_status === 'verified',
       })),
-      skills: ['Python', 'Robotics (VEX/Arduino)', 'IELTS 7.5', 'Олимпиадалық Математика', 'C++', 'Data Structures'],
+      skills: [],
     }
   }, [profileQuery.data, totalPoints, listQuery.data, isKz])
 
@@ -231,29 +220,16 @@ export function AchievementsPage() {
       </div>
 
       {/* Actions Toolbar */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => {
             setShowForm(true)
-            setShowScanner(false)
           }}
           className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-98"
         >
           <PlusCircle className="h-4 w-4" />
-          <span>{t('achievements.addNew')} (+XP)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setShowScanner(!showScanner)
-            setShowForm(false)
-          }}
-          className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-3.5 text-xs font-bold text-blue-700 shadow-2xs transition hover:bg-blue-50/60 active:scale-98 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-slate-800"
-        >
-          <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <span>{isKz ? '🤖 AI Диплом Сканері' : isRu ? '🤖 AI Сканер Грамот' : '🤖 Smart AI Scanner'}</span>
+          <span>{t('achievements.addNew')}</span>
         </button>
 
         <button
@@ -265,14 +241,6 @@ export function AchievementsPage() {
           <span>{isKz ? '📄 Ресми PDF Резюме' : isRu ? '📄 Официальное PDF Резюме' : '📄 Export PDF CV'}</span>
         </button>
       </div>
-
-      {/* AI Scanner View */}
-      {showScanner && (
-        <SmartCertificateScanner
-          onScanComplete={handleScannerResult}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
 
       {/* PDF CV Export Modal */}
       {showPdfModal && (
@@ -304,7 +272,7 @@ export function AchievementsPage() {
               <select className="ushqn-input" {...form.register('category_id')}>
                 {(categoriesQuery.data ?? []).map((c) => (
                   <option key={c.id} value={c.id}>
-                    {CATEGORY_EMOJI[c.slug as string] ?? '🏅'} {c.label_ru} (+{c.default_points} {t('achievements.pointsShort')})
+                    {CATEGORY_EMOJI[c.slug as string] ?? '🏅'} {c.label_ru}
                   </option>
                 ))}
               </select>
@@ -316,7 +284,22 @@ export function AchievementsPage() {
                   <path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/>
                 </svg>
                 {file ? file.name : t('achievements.pickFile')}
-                <input type="file" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                <input
+                  type="file"
+                  accept={ALLOWED_UPLOAD_TYPES.join(',')}
+                  className="sr-only"
+                  onChange={(e) => {
+                    const nextFile = e.target.files?.[0] ?? null
+                    const error = nextFile ? validateUpload(nextFile) : null
+                    if (error) {
+                      toast(error, 'error')
+                      e.target.value = ''
+                      setFile(null)
+                      return
+                    }
+                    setFile(nextFile)
+                  }}
+                />
               </label>
             </div>
             <div className="sm:col-span-2">
@@ -381,13 +364,22 @@ export function AchievementsPage() {
                 <p className="font-bold text-[#172B4D]">{a.title}</p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-[#6B778C]">
                   <span className="rounded-full bg-[#DEEBFF] px-2 py-0.5 font-semibold text-[#0052CC]">{a.category_label}</span>
-                  <span className="font-semibold text-[#36B37E]">
-                    +{a.points_awarded} {t('achievements.points')}
-                  </span>
-                  <span className="text-[#36B37E] font-semibold">{t('achievements.confirmed')}</span>
+                  {a.verification_status === 'verified' ? (
+                    <>
+                      <span className="font-semibold text-[#36B37E]">+{a.points_awarded} {t('achievements.points')}</span>
+                      <span className="font-semibold text-[#36B37E]">{t('achievements.confirmed')}</span>
+                    </>
+                  ) : a.verification_status === 'rejected' ? (
+                    <span className="font-semibold text-red-600">{isKz ? 'Қабылданбады' : isRu ? 'Отклонено' : 'Rejected'}</span>
+                  ) : (
+                    <span className="font-semibold text-amber-600">{isKz ? 'Тексерілуде' : isRu ? 'На проверке' : 'Pending review'}</span>
+                  )}
                   <span>{format(new Date(a.created_at), 'PP', { locale: dateLocale })}</span>
                 </div>
                 {a.description ? <p className="mt-1.5 text-sm text-[#6B778C]">{a.description}</p> : null}
+                {a.verification_status === 'rejected' && a.rejection_reason ? (
+                  <p className="mt-1.5 text-xs font-medium text-red-600">{a.rejection_reason}</p>
+                ) : null}
                 {a.file_url ? (
                   <a href={a.file_url} target="_blank" rel="noreferrer"
                     className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[#0052CC] hover:underline">

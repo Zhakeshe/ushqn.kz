@@ -143,14 +143,14 @@ export function HomePage() {
       }
       const sorted = Array.from(totalsByUser.entries()).sort((a, b) => b[1] - a[1])
       const index = sorted.findIndex(([uid]) => uid === userId)
-      const rank = index >= 0 ? index + 1 : 1
+      const rank = index >= 0 ? index + 1 : 0
       const total = totalUsers || Math.max(sorted.length, 1)
-      const percentile = Math.max(1, Math.round((rank / total) * 100))
+      const percentile = rank > 0 ? Math.max(1, Math.round((rank / total) * 100)) : 0
       return { rank, total, percentile }
     },
   })
 
-  const userRankInfo = rankQuery.data ?? { rank: 1, total: 10, percentile: 2 }
+  const userRankInfo = rankQuery.data ?? { rank: 0, total: 0, percentile: 0 }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-12">
@@ -163,17 +163,17 @@ export function HomePage() {
           <div className="border-b border-slate-200 pb-4 pt-1 dark:border-slate-800">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900 dark:bg-blue-950/60 dark:text-blue-300">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{isKz ? 'Цифрлық ID Паспорт Белсенді' : isRu ? 'Цифровой ID Паспорт Активен' : 'Digital ID Passport Active'}</span>
+              <span>{isKz ? 'Профиль белсенді' : isRu ? 'Профиль активен' : 'Profile active'}</span>
             </div>
             <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
               {p?.display_name ? (isKz ? `Қош келдіңіз, ${p.display_name}!` : isRu ? `Добро пожаловать, ${p.display_name}!` : `Welcome back, ${p.display_name}!`) : (isKz ? 'Қош келдіңіз!' : isRu ? 'Добро пожаловать!' : 'Welcome back!')}
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
               {isKz
-                ? 'Сіздің жетістіктеріңіз, рейтинг ұпайлары және ЖОО гранттарына жол картасы бір жерде.'
+                ? 'Профиль, тексеруге жіберілген жетістіктер және рейтинг ұпайлары бір жерде.'
                 : isRu
-                ? 'Ваши проверенные дипломы, XP-баллы и пошаговый путь к университетским грантам.'
-                : 'Your verified achievements, XP points, and direct roadmap to university grants.'}
+                ? 'Профиль, отправленные на проверку достижения и XP-баллы в одном месте.'
+                : 'Your profile, submitted achievements, and verified XP points in one place.'}
             </p>
           </div>
 
@@ -184,20 +184,7 @@ export function HomePage() {
               className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
             >
               <PlusCircle className="h-4 w-4" />
-              <span>{isKz ? 'Жетістік қосу (+XP)' : isRu ? 'Добавить достижение (+XP)' : 'Add Achievement (+XP)'}</span>
-            </Link>
-            <Link
-              to="/roadmap"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              <Compass className="h-4 w-4 text-indigo-500" />
-              <span>{isKz ? 'AI Roadmap' : isRu ? 'AI Roadmap' : 'AI Roadmap'}</span>
-            </Link>
-            <Link
-              to="/passport"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              <span> {isKz ? 'Apple / G Pay & Wallet' : isRu ? 'Apple / G Pay & Wallet' : 'Apple / G Pay & Wallet'}</span>
+              <span>{isKz ? 'Жетістік қосу' : isRu ? 'Добавить достижение' : 'Add achievement'}</span>
             </Link>
           </div>
 
@@ -230,7 +217,7 @@ export function HomePage() {
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
               </div>
               <div className="mt-1 text-xl font-black text-blue-600 dark:text-blue-400">
-                #{userRankInfo.rank}
+                {userRankInfo.rank > 0 ? `#${userRankInfo.rank}` : '—'}
               </div>
             </Link>
           </div>
@@ -253,13 +240,13 @@ export function HomePage() {
                   )}
                 </div>
                 <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  ✓ {isKz ? 'Верификацияланған' : isRu ? 'Верифицирован' : 'Verified'}
+                  {isKz ? 'Профиль' : isRu ? 'Профиль' : 'Profile'}
                 </span>
               </div>
 
               <div className="mt-2">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  {p?.display_name || (isKz ? 'Алихан Бахытулы' : 'Алихан Бахытулы')}
+                  {p?.display_name || (isKz ? 'Аты көрсетілмеген' : isRu ? 'Имя не указано' : 'Name not provided')}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {p?.school_or_org || (isKz ? 'Оқу орны көрсетілмеген' : isRu ? 'Учебное заведение не указано' : 'School not specified')} · {p?.location || (isKz ? 'Орналасу көрсетілмеген' : isRu ? 'Город не указан' : 'Location not specified')}
@@ -270,7 +257,7 @@ export function HomePage() {
               <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
                 <div className="text-center">
                   <div className="text-lg font-black text-blue-600 dark:text-blue-400">
-                    {totalPoints > 0 ? `${totalPoints.toLocaleString()} XP` : '1,450 XP'}
+                    {totalPoints.toLocaleString()} XP
                   </div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {isKz ? 'USHQN ҰПАЙ' : isRu ? 'USHQN БАЛЛЫ' : 'USHQN XP'}
@@ -278,25 +265,10 @@ export function HomePage() {
                 </div>
                 <div className="text-center border-l border-slate-200 dark:border-slate-700">
                   <div className="text-lg font-black text-slate-900 dark:text-white">
-                    ТОП {userRankInfo.percentile}%
+                    {userRankInfo.percentile > 0 ? `ТОП ${userRankInfo.percentile}%` : '—'}
                   </div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {isKz ? 'РЕЙТИНГТЕ' : isRu ? 'В РЕЙТИНГЕ' : 'LEADERBOARD'}
-                  </div>
-                </div>
-              </div>
-
-              {/* University/Grant Box */}
-              <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-2.5 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="font-bold text-slate-900 dark:text-white text-[11px] truncate">
-                      Astana IT University
-                    </div>
-                    <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                      ✓ {isKz ? 'Академиялық грант мақұлданды' : isRu ? 'Академический грант одобрен' : 'Academic grant approved'}
-                    </div>
                   </div>
                 </div>
               </div>
