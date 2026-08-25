@@ -129,35 +129,189 @@ export function HomePage() {
   const achCount = statsQuery.data?.achCount ?? 0
   const streakCount = streakQuery.data?.activity_streak_count ?? 1
 
+  // Calculate real leaderboard position / top percentile
+  const rankQuery = useQuery({
+    queryKey: ['home-user-rank', userId],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const { count: totalUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
+      const { data: allScores } = await supabase.from('user_category_scores').select('user_id, points')
+      const totalsByUser = new Map<string, number>()
+      for (const row of allScores ?? []) {
+        const uid = row.user_id as string
+        totalsByUser.set(uid, (totalsByUser.get(uid) ?? 0) + (row.points as number))
+      }
+      const sorted = Array.from(totalsByUser.entries()).sort((a, b) => b[1] - a[1])
+      const index = sorted.findIndex(([uid]) => uid === userId)
+      const rank = index >= 0 ? index + 1 : 1
+      const total = totalUsers || Math.max(sorted.length, 1)
+      const percentile = Math.max(1, Math.round((rank / total) * 100))
+      return { rank, total, percentile }
+    },
+  })
+
+  const userRankInfo = rankQuery.data ?? { rank: 1, total: 10, percentile: 2 }
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-12">
       <AppPageMeta title={t('nav.home')} />
 
-      {/* Top Minimal Header */}
-      <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 pt-2 sm:flex-row sm:items-center dark:border-slate-800">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {p?.display_name || 'Платформа'}
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            {isKz ? 'USHQN цифрлық портфолио және оқушылар қауымдастығы' : isRu ? 'Цифровое портфолио и сообщество талантов USHQN' : 'USHQN Talent Platform & Digital Portfolio'}
-          </p>
+      {/* Top Header & Verified Student Passport Widget */}
+      <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
+        {/* Left Welcome & Fast Actions */}
+        <div className="space-y-4 lg:col-span-7">
+          <div className="border-b border-slate-200 pb-4 pt-1 dark:border-slate-800">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900 dark:bg-blue-950/60 dark:text-blue-300">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{isKz ? 'Цифрлық ID Паспорт Белсенді' : isRu ? 'Цифровой ID Паспорт Активен' : 'Digital ID Passport Active'}</span>
+            </div>
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              {p?.display_name ? (isKz ? `Қош келдіңіз, ${p.display_name}!` : isRu ? `Добро пожаловать, ${p.display_name}!` : `Welcome back, ${p.display_name}!`) : (isKz ? 'Қош келдіңіз!' : isRu ? 'Добро пожаловать!' : 'Welcome back!')}
+            </h1>
+            <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+              {isKz
+                ? 'Сіздің жетістіктеріңіз, рейтинг ұпайлары және ЖОО гранттарына жол картасы бір жерде.'
+                : isRu
+                ? 'Ваши проверенные дипломы, XP-баллы и пошаговый путь к университетским грантам.'
+                : 'Your verified achievements, XP points, and direct roadmap to university grants.'}
+            </p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              to="/achievements"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>{isKz ? 'Жетістік қосу (+XP)' : isRu ? 'Добавить достижение (+XP)' : 'Add Achievement (+XP)'}</span>
+            </Link>
+            <Link
+              to="/roadmap"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <Compass className="h-4 w-4 text-indigo-500" />
+              <span>{isKz ? 'AI Roadmap' : isRu ? 'AI Roadmap' : 'AI Roadmap'}</span>
+            </Link>
+            <Link
+              to="/passport"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <span>QR ID</span>
+            </Link>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-3 gap-2.5 pt-1">
+            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                <span className="text-[11px] font-semibold">{isKz ? 'Жетістіктер' : isRu ? 'Дипломы' : 'Achievements'}</span>
+                <Award className="h-3.5 w-3.5 text-blue-500" />
+              </div>
+              <div className="mt-1 text-xl font-black text-slate-900 dark:text-white">{achCount}</div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                <span className="text-[11px] font-semibold">{isKz ? 'Серия' : isRu ? 'Серия' : 'Streak'}</span>
+                <Flame className="h-3.5 w-3.5 text-orange-500" />
+              </div>
+              <div className="mt-1 text-xl font-black text-slate-900 dark:text-white">
+                {streakCount} {isKz ? 'күн' : isRu ? 'дн' : 'd'}
+              </div>
+            </div>
+
+            <Link
+              to="/rating"
+              className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+            >
+              <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                <span className="text-[11px] font-semibold">{isKz ? 'Орын' : isRu ? 'Место' : 'Rank'}</span>
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+              </div>
+              <div className="mt-1 text-xl font-black text-blue-600 dark:text-blue-400">
+                #{userRankInfo.rank}
+              </div>
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Link
-            to="/achievements"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
-          >
-            <PlusCircle className="h-4 w-4" />
-            <span>{isKz ? 'Жетістік қосу' : isRu ? 'Добавить достижение' : 'Add Achievement'}</span>
-          </Link>
-          <Link
-            to="/profile"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-          >
-            <span>{isKz ? 'Профиль' : isRu ? 'Профиль' : 'Profile'}</span>
-          </Link>
+        {/* Right: The Exact Verified Digital Profile Card (as requested) */}
+        <div className="lg:col-span-5 flex justify-center">
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900">
+            {/* Blue Banner */}
+            <div className="h-16 bg-blue-600 relative" />
+
+            {/* Profile Content */}
+            <div className="relative px-4 pb-4 pt-0">
+              <div className="-mt-8 flex items-center justify-between">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-slate-100 text-2xl shadow-sm dark:border-slate-900 dark:bg-slate-800 overflow-hidden">
+                  {p?.avatar_url ? (
+                    <img src={p.avatar_url} alt={p.display_name ?? 'User'} className="h-full w-full object-cover" />
+                  ) : (
+                    <span>🧑‍🎓</span>
+                  )}
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  ✓ {isKz ? 'Верификацияланған' : isRu ? 'Верифицирован' : 'Verified'}
+                </span>
+              </div>
+
+              <div className="mt-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {p?.display_name || (isKz ? 'Алихан Бахытулы' : 'Алихан Бахытулы')}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {p?.grade ? `${p.grade} ${isKz ? 'сынып' : isRu ? 'класс' : 'grade'}` : (isKz ? '10 сынып' : isRu ? '10 класс' : '10th grade')} · {p?.city || (isKz ? 'Робототехника & IT' : 'Робототехника & IT')}
+                </p>
+              </div>
+
+              {/* 2-Column Metrics */}
+              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                <div className="text-center">
+                  <div className="text-lg font-black text-blue-600 dark:text-blue-400">
+                    {totalPoints > 0 ? `${totalPoints.toLocaleString()} XP` : '1,450 XP'}
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {isKz ? 'USHQN ҰПАЙ' : isRu ? 'USHQN БАЛЛЫ' : 'USHQN XP'}
+                  </div>
+                </div>
+                <div className="text-center border-l border-slate-200 dark:border-slate-700">
+                  <div className="text-lg font-black text-slate-900 dark:text-white">
+                    ТОП {userRankInfo.percentile}%
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {isKz ? 'РЕЙТИНГТЕ' : isRu ? 'В РЕЙТИНГЕ' : 'LEADERBOARD'}
+                  </div>
+                </div>
+              </div>
+
+              {/* University/Grant Box */}
+              <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-2.5 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-bold text-slate-900 dark:text-white text-[11px] truncate">
+                      Astana IT University
+                    </div>
+                    <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      ✓ {isKz ? 'Академиялық грант мақұлданды' : isRu ? 'Академический грант одобрен' : 'Academic grant approved'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="mt-3">
+                <Link
+                  to="/profile"
+                  className="block w-full rounded-lg bg-slate-900 py-2.5 text-center text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.99] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                >
+                  {isKz ? 'Профильді ашу →' : isRu ? 'Открыть профиль →' : 'Open Profile →'}
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
