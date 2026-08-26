@@ -1,2 +1,2 @@
-[functions.create-apple-pay-checkout]
+[functions.create-apple-wallet-pass]
 verify_jwt = true

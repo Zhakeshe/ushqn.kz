@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { DigitalPassportCard, DigitalPassportModal } from '../components/DigitalPassportModal'
-import { DigitalWalletAndNftCard } from '../components/DigitalWalletAndNftCard'
-import { ApplePayCheckout } from '../components/ApplePayCheckout'
+import { AppleWalletPass } from '../components/AppleWalletPass'
 import { QrOrganizerScannerModal } from '../components/QrOrganizerScannerModal'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { MiniProfileSidebar } from '../components/MiniProfileSidebar'
@@ -16,7 +15,7 @@ export function PassportPage() {
   const isRu = i18n.language === 'ru'
   const [modalOpen, setModalOpen] = useState(false)
   const [scannerOpen, setScannerOpen] = useState(false)
-  const [activeView, setActiveView] = useState<'apple_google_pay' | 'wallet_nft' | 'standard'>('standard')
+  const [activeView, setActiveView] = useState<'wallet' | 'standard'>('standard')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[260px_1fr] lg:gap-6">
@@ -50,31 +49,20 @@ export function PassportPage() {
           </div>
         </div>
 
-        <FeatureStatusNotice kind={activeView === 'standard' ? 'verification' : 'financial'} />
+        <FeatureStatusNotice kind="verification" />
 
         {/* View Switcher */}
         <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
           <button
             type="button"
-            onClick={() => setActiveView('apple_google_pay')}
+            onClick={() => setActiveView('wallet')}
             className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
-              activeView === 'apple_google_pay'
+              activeView === 'wallet'
                 ? 'bg-slate-950 text-white shadow-xs dark:bg-white dark:text-slate-950'
                 : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-             Apple Pay
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView('wallet_nft')}
-            className={`flex-1 min-w-[140px] rounded-lg py-2 text-xs font-bold transition ${
-              activeView === 'wallet_nft'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
-            }`}
-          >
-            📱 Apple / Google Wallet & NFC
+             Apple Wallet
           </button>
           <button
             type="button"
@@ -89,8 +77,7 @@ export function PassportPage() {
           </button>
         </div>
 
-        {activeView === 'apple_google_pay' && <ApplePayCheckout />}
-        {activeView === 'wallet_nft' && <DigitalWalletAndNftCard />}
+        {activeView === 'wallet' && <AppleWalletPass />}
         {activeView === 'standard' && <DigitalPassportCard onOpenModal={() => setModalOpen(true)} />}
 
         {modalOpen && <DigitalPassportModal onClose={() => setModalOpen(false)} />}

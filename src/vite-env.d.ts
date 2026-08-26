@@ -7,7 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_DSN?: string
   readonly VITE_POSTHOG_KEY?: string
   readonly VITE_POSTHOG_HOST?: string
-  readonly VITE_APPLE_PAY_ENABLED?: string
+  readonly VITE_APPLE_WALLET_ENABLED?: string
 }
 
 interface ImportMeta {
