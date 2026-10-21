@@ -12,7 +12,7 @@ A multilingual student growth platform built with React, TypeScript, Vite and Su
 | Career guidance | Interest selection, suggested directions and a session-local checklist. Rules-based suggestions; no connected LLM or predictive admission claims. |
 | Skills marketplace | Existing service listings, image uploads, search and direct chat. Goods and vacancy listings are removed from this UI. No platform payments or escrow. |
 
-The public landing, journey dashboard and desktop/mobile navigation use this scope in Russian, Kazakh and English. Messages, notifications, settings and staff moderation support the core modules.
+The public landing uses a dark, minimal visual direction with large typography, lime actions, module tabs and a FAQ. The journey dashboard and desktop/mobile navigation use this scope in Russian, Kazakh and English. Messages, notifications, settings and staff moderation support the core modules.
 
 Wallet/Apple Wallet, RPG labs, grants demos, standalone jobs, communities, people search and calendar are no longer product routes. Historical source files and database tables remain for compatibility; this change does not delete user data. `/showcase` and `/jobs` redirect to `/marketplace`.
 
@@ -65,3 +65,12 @@ Connected AI mentoring, parent insight reports, university/admissions navigation
 - `e2e/` — public and authenticated Playwright checks.
 
 Frontend route guards are UX controls. Authorization is enforced in Supabase RLS and RPCs.
+
+## Authentication deployment configuration
+
+- Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the deployment build environment. Missing configuration now disables sign-in/sign-up actions and displays a service-unavailable notice instead of calling a mock endpoint.
+- Leave `VITE_APP_URL` blank to use the current origin, or set the canonical public origin. A copied localhost value is ignored on a non-local site. Rebuild after changing Vite variables.
+- In Supabase Authentication URL Configuration, set the Site URL to the real deployed origin and allow `<origin>/auth/callback` and `<origin>/reset-password`. Add the exact staging origin separately.
+- Google sign-in, signup confirmations and resent signup emails now use `/auth/callback`. That route waits for the SDK to process the session, shows expired-link errors and navigates to the guarded dashboard. Legacy root callbacks are also routed to the callback screen.
+- Signed-in visitors to `/login` and `/register` go to the dashboard. New accounts are routed to onboarding; completing it updates and refetches the route-guard cache before navigation. Profile-query failures render an explicit retry screen.
+- `src/routes/authFlow.test.tsx` tests the routing with a mocked authenticated SDK and a real React Query cache; it does not replace a live Supabase signup/email/Google test.
