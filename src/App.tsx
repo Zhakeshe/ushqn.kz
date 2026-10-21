@@ -9,6 +9,8 @@ import {
 import { AppLayout } from './components/Layout'
 import { AdminRoute } from './routes/AdminRoute'
 import { ProtectedRoute } from './routes/ProtectedRoute'
+import { GuestRoute } from './routes/GuestRoute'
+import { hasAuthCallback } from './lib/authRouting'
 import { trackEvent } from './lib/analytics'
 
 const LandingPage = lazy(() =>
@@ -82,6 +84,24 @@ const OlympiadsPage = lazy(() =>
   import('./pages/OlympiadsPage').then((m) => ({ default: m.OlympiadsPage })),
 )
 
+const AuthCallbackPage = lazy(() =>
+  import('./pages/AuthCallbackPage').then((m) => ({
+    default: m.AuthCallbackPage,
+  })),
+)
+
+function LandingEntry() {
+  const location = useLocation()
+  if (hasAuthCallback(location.search, location.hash))
+    return (
+      <Navigate
+        to={`/auth/callback${location.search}${location.hash}`}
+        replace
+      />
+    )
+  return <LandingPage />
+}
+
 function RouteFallback() {
   return (
     <div
@@ -111,9 +131,12 @@ export default function App() {
       <PageViewTracker />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/" element={<LandingEntry />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route element={<GuestRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/u/:id" element={<PublicProfilePage />} />
