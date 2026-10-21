@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
 import { useMemo, useState } from 'react'
 import { AppPageMeta } from '../components/AppPageMeta'
-import { SchoolClashLeaderboard } from '../components/SchoolClashLeaderboard'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
@@ -252,7 +251,6 @@ export function RatingPage() {
     },
   })
 
-  const [ratingView, setRatingView] = useState<'students' | 'schools'>('students')
   const rows = leaderboardQuery.data ?? []
   const top3 = rows.slice(0, 3)
   const rest = rows.slice(3)
@@ -261,36 +259,6 @@ export function RatingPage() {
     <div className="space-y-6">
       <AppPageMeta title={t('nav.rating')} />
 
-      {/* Mode Switcher */}
-      <div className="flex rounded-xl border border-[var(--color-ushqn-border)] bg-[var(--color-ushqn-card)] p-1 shadow-2xs">
-        <button
-          type="button"
-          onClick={() => setRatingView('students')}
-          className={`flex-1 rounded-lg py-2.5 text-xs font-bold transition ${
-            ratingView === 'students'
-              ? 'bg-[#0052CC] text-white shadow-xs'
-              : 'text-[var(--color-ushqn-muted)] hover:bg-[var(--color-ushqn-bg-alt)]'
-          }`}
-        >
-          🏆 {t('rating.title')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setRatingView('schools')}
-          className={`flex-1 rounded-lg py-2.5 text-xs font-bold transition ${
-            ratingView === 'schools'
-              ? 'bg-[#0052CC] text-white shadow-xs'
-              : 'text-[var(--color-ushqn-muted)] hover:bg-[var(--color-ushqn-bg-alt)]'
-          }`}
-        >
-          ⚔️ Мектептер Баттлы (РФМШ vs НИШ vs БИЛ)
-        </button>
-      </div>
-
-      {ratingView === 'schools' ? (
-        <SchoolClashLeaderboard />
-      ) : (
-        <>
           <div className="ushqn-card overflow-hidden p-0 shadow-xl">
             <div className="ushqn-rating-hero-mesh relative px-6 py-10 text-white">
               <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 animate-pulse rounded-full bg-white/10 blur-3xl" />
@@ -482,8 +450,6 @@ export function RatingPage() {
           </QueryState>
         </section>
       ) : null}
-        </>
-      )}
     </div>
   )
 }
