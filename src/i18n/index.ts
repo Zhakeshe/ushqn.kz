@@ -19,6 +19,8 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
+document.documentElement.lang = savedLang
+
 i18n.on('languageChanged', (lng) => {
   localStorage.setItem(LANG_KEY, lng)
   document.documentElement.lang = lng

@@ -1097,10 +1097,10 @@ export function AdminPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Link
-                            to={`/passport`}
+                            to={`/u/${st.id}`}
                             className="inline-flex items-center gap-1 font-bold text-blue-600 hover:underline text-[11px]"
                           >
-                            <span>{isKz ? 'Паспорт' : 'Паспорт'}</span>
+                            <span>{isKz ? 'Портфолио' : 'Портфолио'}</span>
                             <ExternalLink className="h-3 w-3" />
                           </Link>
                         </td>

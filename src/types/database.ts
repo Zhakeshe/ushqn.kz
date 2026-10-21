@@ -1,6 +1,36 @@
+export type Olympiad = {
+  id: string
+  organizer_id: string
+  title: string
+  subject: string
+  description: string
+  duration_minutes: number
+  starts_at: string
+  ends_at: string
+  created_at: string
+}
+export type OlympiadAttempt = {
+  id: string
+  olympiad_id: string
+  user_id: string
+  started_at: string
+  deadline: string
+  submitted_at: string | null
+  answers: Record<string, number>
+  score: number | null
+  total: number
+}
+export type OlympiadQuestion = { id: string; prompt: string; options: string[] }
+export type OlympiadSession = {
+  attempt: OlympiadAttempt
+  questions: OlympiadQuestion[]
+  server_now: string
+}
+
 export type UserRole = 'pupil' | 'student' | 'parent' | 'teacher'
 export type ListingKind = 'good' | 'service'
-export type ContentReportTarget = 'job' | 'achievement' | 'message' | 'listing' | 'profile'
+export type ContentReportTarget =
+  'job' | 'achievement' | 'message' | 'listing' | 'profile'
 export type JobApplicationStatus =
   | 'submitted'
   | 'viewed'
@@ -11,12 +41,16 @@ export type JobApplicationStatus =
   | 'rejected'
   | 'withdrawn'
 export type JobWorkMode = 'any' | 'remote' | 'onsite' | 'hybrid'
-export type JobVacancyStatus = 'open' | 'filled' | 'closed_not_needed' | 'closed_other'
+export type JobVacancyStatus =
+  'open' | 'filled' | 'closed_not_needed' | 'closed_other'
 export type AchievementVerificationStatus = 'pending' | 'verified' | 'rejected'
 
 interface DatabaseShape {
   public: {
     Tables: {
+      olympiads: { Row: Olympiad; Insert: never; Update: never }
+      olympiad_attempts: { Row: OlympiadAttempt; Insert: never; Update: never }
+
       profiles: {
         Row: {
           id: string
@@ -72,7 +106,9 @@ interface DatabaseShape {
           created_at: string
           accepted_at: string | null
         }
-        Insert: Partial<Database['public']['Tables']['student_links']['Row']> & {
+        Insert: Partial<
+          Database['public']['Tables']['student_links']['Row']
+        > & {
           student_id: string
           link_type: 'parent' | 'teacher'
           invite_code: string
@@ -115,7 +151,9 @@ interface DatabaseShape {
           created_at: string
           updated_at: string
         }
-        Insert: Partial<Database['public']['Tables']['teacher_groups']['Row']> & {
+        Insert: Partial<
+          Database['public']['Tables']['teacher_groups']['Row']
+        > & {
           owner_id: string
           title: string
           join_code_expires_at?: string | null
@@ -132,11 +170,15 @@ interface DatabaseShape {
           is_active: boolean
           is_guest: boolean
         }
-        Insert: Partial<Database['public']['Tables']['teacher_group_members']['Row']> & {
+        Insert: Partial<
+          Database['public']['Tables']['teacher_group_members']['Row']
+        > & {
           group_id: string
           student_id: string
         }
-        Update: Partial<Database['public']['Tables']['teacher_group_members']['Row']>
+        Update: Partial<
+          Database['public']['Tables']['teacher_group_members']['Row']
+        >
       }
       user_settings: {
         Row: {
@@ -164,7 +206,9 @@ interface DatabaseShape {
           digest_email_enabled?: boolean
           push_notify_opt_in?: boolean
         }
-        Update: Partial<Omit<Database['public']['Tables']['user_settings']['Row'], 'user_id'>>
+        Update: Partial<
+          Omit<Database['public']['Tables']['user_settings']['Row'], 'user_id'>
+        >
       }
       profile_skills: {
         Row: {
@@ -212,7 +256,12 @@ interface DatabaseShape {
           file_path?: string | null
           file_bucket?: 'uploads' | 'evidence'
         }
-        Update: Partial<Omit<Database['public']['Tables']['achievements']['Row'], 'id' | 'user_id'>>
+        Update: Partial<
+          Omit<
+            Database['public']['Tables']['achievements']['Row'],
+            'id' | 'user_id'
+          >
+        >
       }
       user_category_scores: {
         Row: {
@@ -254,7 +303,10 @@ interface DatabaseShape {
           collection_slug?: string | null
         }
         Update: Partial<
-          Omit<Database['public']['Tables']['listings']['Row'], 'id' | 'owner_id' | 'created_at'>
+          Omit<
+            Database['public']['Tables']['listings']['Row'],
+            'id' | 'owner_id' | 'created_at'
+          >
         >
       }
       jobs: {
@@ -290,7 +342,10 @@ interface DatabaseShape {
           closed_at?: string | null
         }
         Update: Partial<
-          Omit<Database['public']['Tables']['jobs']['Row'], 'id' | 'owner_id' | 'created_at'>
+          Omit<
+            Database['public']['Tables']['jobs']['Row'],
+            'id' | 'owner_id' | 'created_at'
+          >
         >
       }
       job_applications: {
@@ -337,7 +392,12 @@ interface DatabaseShape {
           body: string
           is_public?: boolean
         }
-        Update: Partial<Omit<Database['public']['Tables']['profile_recommendations']['Row'], 'id' | 'created_at'>>
+        Update: Partial<
+          Omit<
+            Database['public']['Tables']['profile_recommendations']['Row'],
+            'id' | 'created_at'
+          >
+        >
       }
       content_reports: {
         Row: {
@@ -463,7 +523,16 @@ interface DatabaseShape {
           query_text?: string | null
           enabled?: boolean
         }
-        Update: Partial<Pick<Database['public']['Tables']['job_alerts']['Row'], 'enabled' | 'employment_type' | 'work_mode' | 'sphere' | 'query_text'>>
+        Update: Partial<
+          Pick<
+            Database['public']['Tables']['job_alerts']['Row'],
+            | 'enabled'
+            | 'employment_type'
+            | 'work_mode'
+            | 'sphere'
+            | 'query_text'
+          >
+        >
       }
       communities: {
         Row: {
@@ -478,7 +547,12 @@ interface DatabaseShape {
           title: string
           region_label?: string
         }
-        Update: Partial<Pick<Database['public']['Tables']['communities']['Row'], 'title' | 'region_label'>>
+        Update: Partial<
+          Pick<
+            Database['public']['Tables']['communities']['Row'],
+            'title' | 'region_label'
+          >
+        >
       }
       community_members: {
         Row: {
@@ -507,7 +581,12 @@ interface DatabaseShape {
           note?: string | null
           status?: 'pending' | 'accepted' | 'declined' | 'cancelled'
         }
-        Update: Partial<Pick<Database['public']['Tables']['mentorship_requests']['Row'], 'status' | 'note'>>
+        Update: Partial<
+          Pick<
+            Database['public']['Tables']['mentorship_requests']['Row'],
+            'status' | 'note'
+          >
+        >
       }
       events: {
         Row: {
@@ -533,7 +612,10 @@ interface DatabaseShape {
           is_public?: boolean
         }
         Update: Partial<
-          Omit<Database['public']['Tables']['events']['Row'], 'id' | 'owner_id' | 'created_at'>
+          Omit<
+            Database['public']['Tables']['events']['Row'],
+            'id' | 'owner_id' | 'created_at'
+          >
         >
       }
       event_rsvps: {
@@ -590,6 +672,35 @@ interface DatabaseShape {
       }
     }
     Functions: {
+      create_olympiad: {
+        Args: {
+          p_title: string
+          p_subject: string
+          p_description: string
+          p_duration: number
+          p_starts: string
+          p_ends: string
+          p_questions: {
+            prompt: string
+            options: string[]
+            correct_index: number
+          }[]
+        }
+        Returns: string
+      }
+      start_olympiad: {
+        Args: { p_olympiad_id: string }
+        Returns: OlympiadSession
+      }
+      save_olympiad_answers: {
+        Args: { p_attempt_id: string; p_answers: Record<string, number> }
+        Returns: boolean
+      }
+      submit_olympiad: {
+        Args: { p_attempt_id: string; p_answers: Record<string, number> }
+        Returns: OlympiadAttempt
+      }
+
       get_or_create_dm: {
         Args: { other_id: string }
         Returns: string
@@ -713,7 +824,9 @@ type NormalizeTable<T> = T extends { Row: infer Row }
 export type Database = {
   public: {
     Tables: {
-      [Name in keyof DatabaseShape['public']['Tables']]: NormalizeTable<DatabaseShape['public']['Tables'][Name]>
+      [Name in keyof DatabaseShape['public']['Tables']]: NormalizeTable<
+        DatabaseShape['public']['Tables'][Name]
+      >
     }
     Views: Record<string, never>
     Functions: DatabaseShape['public']['Functions']
