@@ -1,47 +1,34 @@
 import { NavLink } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { useAuth } from '../hooks/useAuth'
-import { useChatUnreadCount } from '../hooks/useUnreadCounts'
-import { Home, Briefcase, Users, MessageSquare, User } from 'lucide-react'
+import { productNavigation } from '../product/navigation'
+import { useCopy } from '../product/useCopy'
 
 export function MobileNav() {
-  const { userId } = useAuth()
-  const { t } = useTranslation()
-  const { data: unreadCount } = useChatUnreadCount(userId)
-
-  const navItems = [
-    { to: '/home', label: t('nav.home'), icon: Home },
-    { to: '/jobs', label: t('nav.jobs'), icon: Briefcase },
-    { to: '/people', label: t('nav.people'), icon: Users },
-    { to: '/chat', label: t('nav.chat'), icon: MessageSquare },
-    { to: '/profile', label: t('nav.profile'), icon: User },
-  ]
-
+  const copy = useCopy()
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--color-ushqn-border)] bg-[var(--color-ushqn-surface)]/90 backdrop-blur-md sm:hidden">
-      <div className="flex h-16 items-center justify-around px-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/home'}
-            className={({ isActive }) =>
-              `flex flex-1 flex-col items-center justify-center gap-1 text-[10px] font-bold tracking-tight transition ${
-                isActive ? 'text-indigo-600' : 'text-[var(--color-ushqn-muted)]'
-              }`
-            }
-          >
-            <div className="relative">
-              <item.icon size={20} />
-              {item.to === '/chat' && unreadCount && unreadCount > 0 ? (
-                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              ) : null}
-            </div>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+    <nav
+      aria-label={copy(
+        'Основные разделы',
+        'Негізгі бөлімдер',
+        'Main navigation',
+      )}
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--color-ushqn-border)] bg-[var(--color-ushqn-surface)]/95 px-1 backdrop-blur-lg lg:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="flex overflow-x-auto">
+        {productNavigation
+          .filter((x) => x.to !== '/achievements')
+          .map(({ to, icon: Icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 px-1 py-3 text-[9px] font-semibold ${isActive ? 'text-violet-600' : 'text-[var(--color-ushqn-muted)]'}`
+              }
+            >
+              <Icon size={19} />
+              <span>{copy(label[0], label[1], label[2])}</span>
+            </NavLink>
+          ))}
       </div>
     </nav>
   )
