@@ -12,14 +12,21 @@ import { supabase } from '../lib/supabase'
 import { uploadPublicFile } from '../lib/upload'
 import { useToast } from '../lib/toast'
 import { useConfirm } from '../lib/confirm'
-import type { ListingKind } from '../types/database'
+import { useCopy } from '../product/useCopy'
 import { AppPageMeta } from '../components/AppPageMeta'
 import { QueryState } from '../components/QueryState'
 
-type Form = { title: string; description?: string; price_text?: string; kind: ListingKind; collection_slug?: string }
+type Form = {
+  title: string
+  description?: string
+  price_text?: string
+  kind: 'service'
+  collection_slug?: string
+}
 
 export function ShowcasePage() {
   const { t } = useTranslation()
+  const copy = useCopy()
   const { userId } = useAuth()
   const qc = useQueryClient()
   const navigate = useNavigate()
@@ -30,11 +37,7 @@ export function ShowcasePage() {
   const qUrl = searchParams.get('q') ?? ''
   const collectionUrl = searchParams.get('collection') ?? ''
   const [collectionInput, setCollectionInput] = useState(collectionUrl)
-  const [filter, setFilter] = useState<'all' | ListingKind>(() => {
-    const f = searchParams.get('kind')
-    if (f === 'good' || f === 'service') return f
-    return 'all'
-  })
+  const filter = 'service' as const
   const [search, setSearch] = useState(qUrl)
   const debouncedSearch = useDebouncedValue(search.trim(), 350)
 
@@ -50,16 +53,17 @@ export function ShowcasePage() {
     const curQ = searchParams.get('q') ?? ''
     const curKind = searchParams.get('kind')
     const curCol = searchParams.get('collection') ?? ''
-    const wantKind = filter === 'all' ? null : filter
+    const wantKind = filter
     const kindMatch =
-      wantKind == null ? curKind == null || curKind === '' : curKind === wantKind
+      wantKind == null
+        ? curKind == null || curKind === ''
+        : curKind === wantKind
     const colTrim = collectionInput.trim()
     if (curQ === debouncedSearch && kindMatch && curCol === colTrim) return
     const next = new URLSearchParams(searchParams)
     if (debouncedSearch) next.set('q', debouncedSearch)
     else next.delete('q')
-    if (filter !== 'all') next.set('kind', filter)
-    else next.delete('kind')
+    next.set('kind', filter)
     if (colTrim) next.set('collection', colTrim)
     else next.delete('collection')
     setSearchParams(next, { replace: true })
@@ -71,10 +75,10 @@ export function ShowcasePage() {
   const schema = useMemo(
     () =>
       z.object({
-        title: z.string().min(1, t('validation.titleRequired')),
+        title: z.string().trim().min(1, t('validation.titleRequired')).max(160),
         description: z.string().optional(),
         price_text: z.string().optional(),
-        kind: z.enum(['good', 'service']),
+        kind: z.literal('service'),
         collection_slug: z.string().max(80).optional(),
       }),
     [t],
@@ -87,11 +91,14 @@ export function ShowcasePage() {
     queryFn: async () => {
       let q = supabase
         .from('listings')
-        .select('id,owner_id,kind,title,description,price_text,image_url,created_at,collection_slug')
+        .select(
+          'id,owner_id,kind,title,description,price_text,image_url,created_at,collection_slug',
+        )
         .order('created_at', { ascending: false })
-      if (filter !== 'all') q = q.eq('kind', filter)
+      q = q.eq('kind', 'service')
       if (collectionFilter) q = q.eq('collection_slug', collectionFilter)
-      if (debouncedSearch) q = q.or(`title.ilike.%${debouncedSearch}%,description.ilike.%${debouncedSearch}%`)
+      if (debouncedSearch)
+        q = q.ilike('title', `%${debouncedSearch.replace(/[%_\\]/g, '\\$&')}%`)
       const { data, error } = await q
       if (error) throw error
       return data ?? []
@@ -100,7 +107,13 @@ export function ShowcasePage() {
 
   const form = useForm<Form>({
     resolver: zodResolver(schema),
-    defaultValues: { kind: 'good', title: '', description: '', price_text: '', collection_slug: '' },
+    defaultValues: {
+      kind: 'service',
+      title: '',
+      description: '',
+      price_text: '',
+      collection_slug: '',
+    },
   })
 
   useEffect(() => {
@@ -110,11 +123,17 @@ export function ShowcasePage() {
 
   const create = useMutation({
     mutationFn: async (values: Form) => {
+      if (!userId) throw new Error('Authentication required')
       let imageUrl: string | null = null
-      if (image && userId) imageUrl = await uploadPublicFile(userId, `listings/${Date.now()}-${image.name}`, image)
+      if (image && userId)
+        imageUrl = await uploadPublicFile(
+          userId,
+          `listings/${Date.now()}-${image.name}`,
+          image,
+        )
       const { error } = await supabase.from('listings').insert({
         owner_id: userId!,
-        kind: values.kind,
+        kind: 'service',
         title: values.title,
         description: values.description || null,
         price_text: values.price_text || null,
@@ -124,7 +143,13 @@ export function ShowcasePage() {
       if (error) throw error
     },
     onSuccess: () => {
-      form.reset({ kind: 'good', title: '', description: '', price_text: '', collection_slug: '' })
+      form.reset({
+        kind: 'service',
+        title: '',
+        description: '',
+        price_text: '',
+        collection_slug: '',
+      })
       setImage(null)
       setShowForm(false)
       void qc.invalidateQueries({ queryKey: ['listings'] })
@@ -141,13 +166,23 @@ export function ShowcasePage() {
       danger: true,
     })
     if (!ok) return
-    await supabase.from('listings').delete().eq('id', id)
+    const { error } = await supabase
+      .from('listings')
+      .delete()
+      .eq('id', id)
+      .eq('owner_id', userId!)
+    if (error) {
+      toast(t('showcase.toastListingErr'), 'error')
+      return
+    }
     void qc.invalidateQueries({ queryKey: ['listings'] })
     toast(t('showcase.toastListingRemoved'), 'info')
   }
 
   async function contactSeller(ownerId: string) {
-    const { data, error } = await supabase.rpc('get_or_create_dm', { other_id: ownerId })
+    const { data, error } = await supabase.rpc('get_or_create_dm', {
+      other_id: ownerId,
+    })
     if (error) {
       toast(t('jobs.chatOpenErr'), 'error')
       return
@@ -157,13 +192,33 @@ export function ShowcasePage() {
 
   return (
     <div className="space-y-5">
-      <AppPageMeta title={t('nav.services')} />
+      <AppPageMeta
+        title={copy(
+          'Маркетплейс навыков',
+          'Дағдылар маркетплейсі',
+          'Skills marketplace',
+        )}
+      />
       <div className="ushqn-card overflow-hidden p-0">
-        <div className="bg-gradient-to-r from-[#6554C0] to-[#8777D9] px-6 py-7 text-white">
-          <h1 className="text-2xl font-extrabold">{t('showcase.pageTitle')}</h1>
-          <p className="mt-1 text-sm text-purple-100">{t('showcase.pageSub')}</p>
+        <div className="bg-[#211d39] px-6 py-7 text-white">
+          <h1 className="text-2xl font-extrabold text-white">
+            {copy(
+              'Зарабатывай на своих талантах',
+              'Талантыңмен табыс тап',
+              'Turn your talents into opportunities',
+            )}
+          </h1>
+          <p className="mt-1 text-sm text-purple-100">
+            {copy(
+              'Репетиторство, менторство, курсы и консультации. Связывайтесь с автором напрямую; оплата на платформе пока недоступна.',
+              'Репетиторлық, тәлімгерлік, курстар және кеңестер. Автормен тікелей байланысыңыз; платформада төлем әзірге қолжетімсіз.',
+              'Tutoring, mentoring, courses and consultations. Contact the author directly; platform payments are not available yet.',
+            )}
+          </p>
           <span className="mt-3 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
-            {t('showcase.listingsCount', { count: listQuery.data?.length ?? 0 })}
+            {t('showcase.listingsCount', {
+              count: listQuery.data?.length ?? 0,
+            })}
           </span>
         </div>
       </div>
@@ -174,13 +229,17 @@ export function ShowcasePage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('showcase.searchPh')}
+            aria-label={t('showcase.searchPh')}
             className="ushqn-input max-w-xs"
             autoComplete="off"
             name="showcase-search"
             enterKeyHint="search"
           />
           <div className="min-w-0 flex-1 sm:max-w-xs">
-            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#6B778C]" htmlFor="showcase-collection">
+            <label
+              className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#6B778C]"
+              htmlFor="showcase-collection"
+            >
               {t('showcase.collectionLabel')}
             </label>
             <input
@@ -191,20 +250,6 @@ export function ShowcasePage() {
               className="ushqn-input w-full text-sm"
               autoComplete="off"
             />
-          </div>
-          <div className="flex gap-2">
-            {(['all', 'good', 'service'] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setFilter(v)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                  filter === v ? 'border-[#6554C0] bg-[#6554C0] text-white' : 'border-[#DFE1E6] text-[#172B4D] hover:border-[#6554C0]'
-                }`}
-              >
-                {v === 'all' ? t('showcase.filterAll') : v === 'good' ? t('showcase.filterGood') : t('showcase.filterService')}
-              </button>
-            ))}
           </div>
         </div>
       </div>
@@ -227,45 +272,74 @@ export function ShowcasePage() {
       ) : (
         <div className="ushqn-card p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#172B4D]">{t('showcase.newListing')}</h2>
-            <button type="button" onClick={() => setShowForm(false)} className="text-[#6B778C]">
+            <h2 className="text-lg font-bold text-[#172B4D]">
+              {t('showcase.newListing')}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="text-[#6B778C]"
+            >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
                 <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
               </svg>
             </button>
           </div>
-          <form className="grid gap-4 sm:grid-cols-2" onSubmit={form.handleSubmit((v) => create.mutate(v))}>
-            <div>
-              <label className="ushqn-label">{t('showcase.typeLabel')}</label>
-              <select className="ushqn-input" {...form.register('kind')}>
-                <option value="good">{t('showcase.kindGood')}</option>
-                <option value="service">{t('showcase.kindService')}</option>
-              </select>
-            </div>
+          <form
+            className="grid gap-4 sm:grid-cols-2"
+            onSubmit={form.handleSubmit((v) => create.mutate(v))}
+          >
             <div>
               <label className="ushqn-label">{t('showcase.priceLabel')}</label>
-              <input className="ushqn-input" placeholder={t('showcase.pricePh')} {...form.register('price_text')} />
+              <input
+                className="ushqn-input"
+                placeholder={t('showcase.pricePh')}
+                {...form.register('price_text')}
+              />
             </div>
             <div className="sm:col-span-2">
-              <label className="ushqn-label">{t('showcase.headlineLabel')}</label>
-              <input className="ushqn-input" placeholder={t('showcase.headlinePh')} {...form.register('title')} />
+              <label className="ushqn-label">
+                {t('showcase.headlineLabel')}
+              </label>
+              <input
+                className="ushqn-input"
+                placeholder={t('showcase.headlinePh')}
+                {...form.register('title')}
+              />
               {form.formState.errors.title ? (
-                <p className="mt-1 text-xs text-red-600">{form.formState.errors.title.message}</p>
+                <p className="mt-1 text-xs text-red-600">
+                  {form.formState.errors.title.message}
+                </p>
               ) : null}
             </div>
             <div className="sm:col-span-2">
               <label className="ushqn-label">{t('showcase.descLabel')}</label>
-              <textarea rows={3} className="ushqn-input resize-none" {...form.register('description')} />
+              <textarea
+                rows={3}
+                className="ushqn-input resize-none"
+                {...form.register('description')}
+              />
             </div>
             <div className="sm:col-span-2">
-              <label className="ushqn-label">{t('showcase.collectionLabel')}</label>
-              <input className="ushqn-input" placeholder={t('showcase.collectionPh')} {...form.register('collection_slug')} />
+              <label className="ushqn-label">
+                {t('showcase.collectionLabel')}
+              </label>
+              <input
+                className="ushqn-input"
+                placeholder={t('showcase.collectionPh')}
+                {...form.register('collection_slug')}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="ushqn-label">{t('showcase.imageLabel')}</label>
               <label className="mt-1 flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-dashed border-[#DFE1E6] bg-[#fafbfc] px-3 py-2.5 text-sm text-[#6B778C] transition hover:border-[#6554C0] hover:text-[#6554C0]">
                 📷 {image ? image.name : t('showcase.uploadImagePh')}
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={(e) => setImage(e.target.files?.[0] ?? null)} />
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="sr-only"
+                  onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+                />
               </label>
             </div>
             <div className="flex gap-3 sm:col-span-2">
@@ -274,7 +348,9 @@ export function ShowcasePage() {
                 disabled={create.isPending}
                 className="inline-flex items-center justify-center rounded-lg bg-[#6554C0] px-6 py-2 text-sm font-bold text-white transition hover:bg-[#403294] disabled:opacity-50"
               >
-                {create.isPending ? t('jobs.publishPending') : t('showcase.publishListing')}
+                {create.isPending
+                  ? t('jobs.publishPending')
+                  : t('showcase.publishListing')}
               </button>
               <button
                 type="button"
@@ -301,18 +377,34 @@ export function ShowcasePage() {
         {(listQuery.data ?? []).length === 0 ? (
           <div className="ushqn-card flex flex-col items-center justify-center gap-3 py-14 text-center">
             <span className="text-5xl">🛍️</span>
-            <p className="text-base font-bold text-[#172B4D]">{t('showcase.emptyListings')}</p>
-            <p className="text-sm text-[#6B778C]">{t('showcase.emptyListingsHint')}</p>
-            <button type="button" onClick={() => setShowForm(true)} className="ushqn-btn-primary mt-1 px-5 py-2 text-sm">
+            <p className="text-base font-bold text-[#172B4D]">
+              {t('showcase.emptyListings')}
+            </p>
+            <p className="text-sm text-[#6B778C]">
+              {t('showcase.emptyListingsHint')}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="ushqn-btn-primary mt-1 px-5 py-2 text-sm"
+            >
               {t('showcase.addListing')}
             </button>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(listQuery.data ?? []).map((r) => (
-              <article key={r.id} className="ushqn-card flex flex-col overflow-hidden transition-shadow hover:shadow-md">
+              <article
+                key={r.id}
+                className="ushqn-card flex flex-col overflow-hidden transition-shadow hover:shadow-md"
+              >
                 {r.image_url ? (
-                  <img src={r.image_url} alt="" className="h-44 w-full object-cover" loading="lazy" />
+                  <img
+                    src={r.image_url}
+                    alt=""
+                    className="h-44 w-full object-cover"
+                    loading="lazy"
+                  />
                 ) : (
                   <div className="flex h-44 items-center justify-center bg-gradient-to-br from-[#EAE6FF] to-[#DEEBFF] text-4xl">
                     {r.kind === 'good' ? '🏷️' : '🛠️'}
@@ -322,20 +414,39 @@ export function ShowcasePage() {
                   <div className="flex items-start justify-between gap-2">
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                        r.kind === 'service' ? 'bg-[#EAE6FF] text-[#6554C0]' : 'bg-[#DEEBFF] text-[#0052CC]'
+                        r.kind === 'service'
+                          ? 'bg-[#EAE6FF] text-[#6554C0]'
+                          : 'bg-[#DEEBFF] text-[#0052CC]'
                       }`}
                     >
-                      {r.kind === 'good' ? t('showcase.kindGood') : t('showcase.kindService')}
+                      {r.kind === 'good'
+                        ? t('showcase.kindGood')
+                        : t('showcase.kindService')}
                     </span>
-                    {(r as { collection_slug?: string | null }).collection_slug ? (
+                    {(r as { collection_slug?: string | null })
+                      .collection_slug ? (
                       <span className="rounded-full bg-[#F4F5F7] px-2 py-0.5 text-[10px] font-bold text-[#6B778C]">
-                        #{(r as { collection_slug?: string | null }).collection_slug}
+                        #
+                        {
+                          (r as { collection_slug?: string | null })
+                            .collection_slug
+                        }
                       </span>
                     ) : null}
-                    {r.price_text ? <span className="text-sm font-extrabold text-[#0052CC]">{r.price_text}</span> : null}
+                    {r.price_text ? (
+                      <span className="text-sm font-extrabold text-[#0052CC]">
+                        {r.price_text}
+                      </span>
+                    ) : null}
                   </div>
-                  <h3 className="mt-2 text-base font-bold leading-snug text-[#172B4D]">{r.title}</h3>
-                  {r.description ? <p className="mt-1 line-clamp-2 flex-1 text-sm text-[#6B778C]">{r.description}</p> : null}
+                  <h3 className="mt-2 text-base font-bold leading-snug text-[#172B4D]">
+                    {r.title}
+                  </h3>
+                  {r.description ? (
+                    <p className="mt-1 line-clamp-2 flex-1 text-sm text-[#6B778C]">
+                      {r.description}
+                    </p>
+                  ) : null}
                   <div className="mt-3 flex items-center gap-2">
                     {r.owner_id === userId ? (
                       <button
